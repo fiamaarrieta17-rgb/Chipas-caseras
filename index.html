@@ -437,7 +437,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
 <!-- LOADING -->
 <div id="loading-screen">
-  <h2 id="loading-title">Chipas <span>Caseros</span></h2>
+  <h2 id="loading-title">Chipas <span>Premium</span></h2>
   <div class="spinner"></div>
 </div>
 
@@ -1017,7 +1017,7 @@ let currentFilter = 'todos';
 let openCards = new Set();
 
 const DEFAULT_SETTINGS = {
-  business_name: 'Chipas Caseros',
+  business_name: 'Chipas Premium',
   tagline: '✦ El sabor de lo casero en tu freezer ✦',
   subtitle: 'Congeladas · Receta Casera',
   payment_alias: '',
@@ -1131,7 +1131,6 @@ function renderConfigPanel() {
   document.getElementById('cfg-delivery-fee').value = settings.delivery_fee ?? 1000;
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
-  const abierta = !settings.tienda_cerrada && isStoreOpenNow();
   document.getElementById('cfg-tienda-abierta').checked = !settings.tienda_cerrada;
   document.getElementById('store-status-label').textContent = settings.tienda_cerrada ? '🔴 Tienda cerrada manualmente' : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
   previewConfig();
@@ -1310,12 +1309,29 @@ function checkStoreClosed() {
 
 async function toggleTienda(el) {
   settings.tienda_cerrada = !el.checked;
-  document.getElementById('store-status-label').textContent = settings.tienda_cerrada ? '🔴 Tienda cerrada manualmente' : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
+  document.getElementById('store-status-label').textContent = settings.tienda_cerrada
+    ? '🔴 Tienda cerrada manualmente'
+    : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
   saveLocalSettings();
   try {
     await db.from('chipas_settings').upsert({ id: 'main', tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString() });
   } catch(e) {}
   showToast(settings.tienda_cerrada ? '🔴 Tienda cerrada' : '🟢 Tienda abierta');
+  // Actualizar banner para clientes en esta misma sesión (si admin abre en otra pestaña)
+  const banner = document.getElementById('closed-banner');
+  const form = document.getElementById('order-form-card');
+  const cart = document.getElementById('cart-summary');
+  const submitBtn = document.getElementById('btn-submit');
+  const isClosed = settings.tienda_cerrada || !isStoreOpenNow();
+  if (banner) {
+    banner.style.display = isClosed ? 'block' : 'none';
+    document.getElementById('closed-banner-text').textContent = settings.tienda_cerrada
+      ? 'Volvemos pronto. ¡Gracias por tu paciencia!'
+      : (() => { const [aH,aM]=(settings.horario_apertura||'09:00').split(':').map(Number); const [cH,cM]=(settings.horario_cierre||'21:00').split(':').map(Number); return `Nuestro horario es de ${String(aH).padStart(2,'0')}:${String(aM).padStart(2,'0')} a ${String(cH).padStart(2,'0')}:${String(cM).padStart(2,'0')} hs.`; })();
+  }
+  if (form) form.style.display = isClosed ? 'none' : 'block';
+  if (cart) cart.style.display = isClosed ? 'none' : (cart.classList.contains('visible') ? 'block' : 'none');
+  if (submitBtn) submitBtn.disabled = isClosed;
 }
 
 // ===== INIT =====
