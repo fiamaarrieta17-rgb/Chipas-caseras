@@ -325,6 +325,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .pill-en_camino { background: #fff3e0; color: var(--orange); }
 .pill-entregado { background: #d4edda; color: var(--green); }
 .pill-cancelado { background: #fde8e8; color: var(--red); }
+.pill-encargo { background: #f0e6ff; color: #7c3aed; }
 .order-body { border-top: 1px solid var(--border); padding: 14px 16px; display: none; }
 .order-body.open { display: block; }
 .order-items { margin-bottom: 12px; }
@@ -509,6 +510,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div id="closed-banner" class="closed-banner" style="display:none">
       <h3>🔒 Estamos cerrados</h3>
       <p id="closed-banner-text">Volvemos pronto. ¡Gracias por tu paciencia!</p>
+      <button onclick="activarModoEncargo()" style="margin-top:12px;padding:10px 20px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📝 Dejar un encargo</button>
     </div>
 
     <div id="arrived-banner" class="arrived-banner">
@@ -1502,6 +1504,7 @@ async function submitOrder() {
     recargo,
     notas: document.getElementById('f-notas').value.trim(),
     items, total, status: 'pendiente',
+    is_encargo: modoEncargo && !editMode,
     updated_at: new Date().toISOString(),
     edited_at: editMode ? new Date().toISOString() : null
   };
@@ -1526,10 +1529,14 @@ async function submitOrder() {
 
   document.getElementById('order-form-card').style.display = 'none';
   document.getElementById('success-msg').classList.add('visible');
+  document.getElementById('success-msg').querySelector('h3').textContent = modoEncargo ? '📝 ¡Encargo recibido!' : '✅ ¡Pedido enviado!';
+  document.getElementById('success-msg').querySelector('p').textContent = modoEncargo ? 'Te avisamos cuando lo aceptemos 💛' : 'Te avisamos cuando esté listo 💛';
   document.getElementById('post-order-actions').style.display = 'block';
   document.getElementById('btn-submit').textContent = 'Hacer pedido →';
+  document.getElementById('btn-submit').style.background = '';
+  modoEncargo = false;
   showTrackingLink(orderId);
-  showToast('✅ ¡Pedido enviado!');
+  showToast(modoEncargo ? '📝 ¡Encargo enviado!' : '✅ ¡Pedido enviado!');
   requestNotificationPermission();
   checkMyOrder();
 }
@@ -1611,7 +1618,9 @@ function notifyStatusChangeIfNeeded(order) {
   sessionStorage.setItem(key, order.status);
   if (prev === null || prev === order.status) return;
   if (order.status === 'aceptado') {
-    sendBrowserNotification('✅ ¡Tu pedido fue aceptado!', 'Ya estamos preparando tus chipas 💛', 'chipas-status-' + order.id);
+    const msg = order.is_encargo ? '¡Tu encargo fue aceptado! Ya lo estamos preparando 💛' : 'Ya estamos preparando tus chipas 💛';
+    const title = order.is_encargo ? '📝 ¡Encargo aceptado!' : '✅ ¡Tu pedido fue aceptado!';
+    sendBrowserNotification(title, msg, 'chipas-status-' + order.id);
   } else if (order.status === 'en_camino') {
     sendBrowserNotification('🛵 ¡Tu pedido está en camino!', 'Ya salió, te llega pronto.', 'chipas-status-' + order.id);
   } else if (order.status === 'entregado') {
@@ -1763,10 +1772,10 @@ function initAdmin() {
       loadAdminOrders();
       if (payload.new) {
         const alertEl = document.getElementById('new-order-alert');
-        document.getElementById('new-order-alert-text').textContent = `Nuevo pedido de ${payload.new.nombre} — ${formatPrice(payload.new.total)}`;
+        document.getElementById('new-order-alert-text').textContent = `${payload.new.is_encargo ? '📝 Encargo' : 'Nuevo pedido'} de ${payload.new.nombre} — ${formatPrice(payload.new.total)}`;
         alertEl.classList.add('visible');
         playNotificationSound();
-        sendBrowserNotification('🔔 ¡Nuevo pedido!', `${payload.new.nombre} — ${formatPrice(payload.new.total)}`, 'chipas-admin-new-' + payload.new.id);
+        sendBrowserNotification(payload.new.is_encargo ? '📝 ¡Nuevo encargo!' : '🔔 ¡Nuevo pedido!', `${payload.new.nombre} — ${formatPrice(payload.new.total)}`, 'chipas-admin-new-' + payload.new.id);
         // Hacer parpadear el título de la pestaña si está en segundo plano
         if (document.hidden) {
           let blink = true;
@@ -1866,6 +1875,7 @@ function renderAdminOrders() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
             <div class="order-id">${order.id}</div>
             <span class="status-pill pill-${order.status}">${PILLS[order.status]||order.status}</span>
+            ${order.is_encargo ? '<span class="status-pill pill-encargo">📝 Encargo</span>' : ''}
             ${order.pago_avisado && order.metodo_pago === 'efectivo' ? '<span class="status-pill" style="background:#fff3cd;color:#856404">💵 Efectivo</span>' : order.pago_avisado ? '<span class="status-pill" style="background:#d4edda;color:var(--green)">💳 Transferencia</span>' : ''}
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
@@ -2121,6 +2131,37 @@ async function loadHistorial() {
     tr.innerHTML = `<td>${fecha} ${hora}</td><td>${o.nombre}</td><td>${(o.entrega||'domicilio')==='domicilio'?'🛵':'🏃'}</td><td>${formatPrice(o.total)}</td>`;
     tbody.appendChild(tr);
   });
+}
+
+
+// ===== MODO ENCARGO =====
+let modoEncargo = false;
+
+function activarModoEncargo() {
+  modoEncargo = true;
+  const form = document.getElementById('order-form-card');
+  const submitBtn = document.getElementById('btn-submit');
+  const banner = document.getElementById('closed-banner');
+  if (form) form.style.display = 'block';
+  if (submitBtn) {
+    submitBtn.textContent = '📝 Dejar encargo →';
+    submitBtn.disabled = false;
+    submitBtn.style.background = '#7c3aed';
+  }
+  if (banner) banner.style.display = 'none';
+  // Show cart too
+  updateCartSummary();
+  showToast('📝 Podés dejar tu encargo, te avisamos cuando lo aceptemos');
+}
+
+function desactivarModoEncargo() {
+  modoEncargo = false;
+  const submitBtn = document.getElementById('btn-submit');
+  if (submitBtn) {
+    submitBtn.textContent = 'Hacer pedido →';
+    submitBtn.style.background = '';
+  }
+  checkStoreClosed();
 }
 
 // START
