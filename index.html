@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chipas Premium</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3d1f0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chipas">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&display=swap');
@@ -191,6 +199,14 @@ button, input, textarea { font-family: inherit; }
 /* PAYMENT */
 .payment-card { background: #fff; border: 1.5px solid var(--border); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; display: none; box-shadow: 0 2px 10px rgba(26,39,68,0.05); }
 .payment-card.visible { display: block; }
+.payment-method-options { display: flex; gap: 10px; margin-bottom: 16px; }
+.payment-method-opt { flex: 1; padding: 14px 8px; border: 1.5px solid var(--border); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--cream); }
+.payment-method-opt .pm-icon { font-size: 22px; margin-bottom: 4px; }
+.payment-method-opt .pm-label { font-size: 13px; font-weight: 700; color: var(--navy); }
+.payment-method-opt.selected { border-color: var(--gold); background: #fffbf3; box-shadow: 0 0 0 3px rgba(201,147,58,0.15); }
+.efectivo-msg { background: var(--cream2); border-radius: 12px; padding: 14px 16px; text-align: center; margin-bottom: 10px; display: none; }
+.efectivo-msg p { font-size: 14px; color: var(--navy); font-weight: 600; }
+.efectivo-msg span { font-size: 12px; color: var(--muted); }
 .payment-card h3 { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
 .pay-amount { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
 .pay-amount strong { color: var(--gold); font-size: 16px; }
@@ -292,8 +308,10 @@ button, input, textarea { font-family: inherit; }
 .btn-deliver:hover { background: var(--green); color: #fff; }
 .btn-cancel-order { background: #fde8e8; color: var(--red); }
 .btn-cancel-order:hover { background: var(--red); color: #fff; }
-.btn-delete { background: #f0f0f0; color: #999; }
-.btn-delete:hover { background: #ddd; color: #666; }
+.btn-delete { background: #fde8e8; color: var(--red); }
+.btn-delete:hover { background: var(--red); color: #fff; }
+.btn-archive { background: #f0f0f0; color: #999; }
+.btn-archive:hover { background: #ddd; color: #666; }
 
 /* ALERT BANNER NUEVO PEDIDO */
 .new-order-alert { 
@@ -469,20 +487,51 @@ button, input, textarea { font-family: inherit; }
       <p>Te avisamos cuando esté listo 💛</p>
     </div>
 
-    <div class="payment-card" id="payment-card">
+<div class="payment-card" id="payment-card">
       <h3>💳 Pagá tu pedido</h3>
       <div class="pay-amount" id="payment-amount"></div>
-      <div class="payment-alias-box">
-        <div class="alias-info">
-          <div class="alias-label">Alias / CBU / CVU</div>
-          <div class="alias-value" id="payment-alias">—</div>
+
+      <!-- Selector de método de pago -->
+      <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:8px">¿CÓMO VAS A PAGAR?</label>
+      <div class="payment-method-options">
+        <div class="payment-method-opt selected" id="pm-transferencia" onclick="selectPaymentMethod('transferencia')">
+          <div class="pm-icon">💸</div>
+          <div class="pm-label">Transferencia</div>
         </div>
-        <button class="copy-btn" onclick="copyAlias()">📋 Copiar</button>
+        <div class="payment-method-opt" id="pm-efectivo" onclick="selectPaymentMethod('efectivo')">
+          <div class="pm-icon">💵</div>
+          <div class="pm-label">Efectivo</div>
+        </div>
+        <!-- FUTURO: <div class="payment-method-opt" id="pm-mp" onclick="selectPaymentMethod('mp')">
+          <div class="pm-icon">🔵</div>
+          <div class="pm-label">Mercado Pago</div>
+        </div> -->
       </div>
-      <div class="payment-titular" id="payment-titular"></div>
-      <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
-      <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
-      <p class="payment-hint">Una vez que transferís, te confirmamos el pedido.</p>
+
+      <!-- Panel transferencia -->
+      <div id="panel-transferencia">
+        <div class="payment-alias-box">
+          <div class="alias-info">
+            <div class="alias-label">Alias / CBU / CVU</div>
+            <div class="alias-value" id="payment-alias">—</div>
+          </div>
+          <button class="copy-btn" onclick="copyAlias()">📋 Copiar</button>
+        </div>
+        <div class="payment-titular" id="payment-titular"></div>
+        <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
+        <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
+        <p class="payment-hint">Una vez que transferís, te confirmamos el pedido.</p>
+      </div>
+
+      <!-- Panel efectivo -->
+      <div id="panel-efectivo" style="display:none">
+        <div class="efectivo-msg" style="display:block">
+          <p>💵 Pagás en efectivo al recibir</p>
+          <span>El repartidor te cobra cuando entrega el pedido.</span>
+        </div>
+        <button class="btn-paid" id="btn-confirmar-efectivo" onclick="markAsEfectivo()">✅ Confirmar pedido en efectivo</button>
+        <p class="payment-hint">Te avisamos cuando tu pedido esté en camino.</p>
+      </div>
     </div>
 
     <div class="form-card" id="order-form-card">
@@ -1312,12 +1361,25 @@ async function submitOrder() {
   checkMyOrder();
 }
 
+// ===== MÉTODO DE PAGO =====
+let selectedPaymentMethod = 'transferencia'; // 'transferencia' | 'efectivo' | 'mp' (futuro)
+
+function selectPaymentMethod(method) {
+  selectedPaymentMethod = method;
+  ['transferencia', 'efectivo'].forEach(m => {
+    document.getElementById('pm-' + m)?.classList.toggle('selected', m === method);
+    document.getElementById('panel-' + m).style.display = m === method ? 'block' : 'none';
+  });
+}
+
 async function markAsPaid() {
   if (!myOrderId) return;
   const btn = document.getElementById('btn-ya-pague');
   btn.disabled = true; btn.textContent = 'Avisando...';
   const { error } = await db.from('chipas_orders').update({
-    pago_avisado: true, pago_avisado_at: new Date().toISOString()
+    pago_avisado: true, pago_avisado_at: new Date().toISOString(),
+    metodo_pago: 'transferencia'
+    // FUTURO MP: pago_mp_verificado: false
   }).eq('id', myOrderId);
   if (error) {
     showToast('❌ No se pudo avisar, intentá de nuevo');
@@ -1327,6 +1389,24 @@ async function markAsPaid() {
   }
   btn.textContent = '✅ Ya avisaste que pagaste';
   showToast('💳 Le avisamos que ya transferiste');
+}
+
+async function markAsEfectivo() {
+  if (!myOrderId) return;
+  const btn = document.getElementById('btn-confirmar-efectivo');
+  btn.disabled = true; btn.textContent = 'Confirmando...';
+  const { error } = await db.from('chipas_orders').update({
+    metodo_pago: 'efectivo',
+    pago_avisado: true,
+    pago_avisado_at: new Date().toISOString()
+  }).eq('id', myOrderId);
+  if (error) {
+    showToast('❌ Error, intentá de nuevo');
+    btn.disabled = false; btn.textContent = '✅ Confirmar pedido en efectivo';
+    return;
+  }
+  btn.textContent = '✅ Pedido confirmado';
+  showToast('💵 Pedido confirmado, pagás al recibir');
 }
 
 async function checkMyOrder() {
@@ -1393,12 +1473,22 @@ function updateStatusTracker(order) {
 
   paymentCard.classList.toggle('visible', showPayment);
   if (showPayment) {
-    document.getElementById('payment-amount').innerHTML = `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
-    renderPaymentBox();
+    // Restaurar método de pago si ya eligió efectivo
+    if (order.metodo_pago === 'efectivo') {
+      selectPaymentMethod('efectivo');
+    } else {
+      selectPaymentMethod('transferencia');
+      document.getElementById('payment-amount').innerHTML = `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
+      renderPaymentBox();
+    }
     const btnPagar = document.getElementById('btn-ya-pague');
-    if (btnPagar) {
-      if (order.pago_avisado) { btnPagar.disabled = true; btnPagar.textContent = '✅ Ya avisaste que pagaste'; }
-      else { btnPagar.disabled = false; btnPagar.textContent = '✅ Ya transferí, avisar'; }
+    const btnEfectivo = document.getElementById('btn-confirmar-efectivo');
+    if (order.pago_avisado) {
+      if (btnPagar) { btnPagar.disabled = true; btnPagar.textContent = '✅ Ya avisaste que pagaste'; }
+      if (btnEfectivo) { btnEfectivo.disabled = true; btnEfectivo.textContent = '✅ Pedido confirmado'; }
+    } else {
+      if (btnPagar) { btnPagar.disabled = false; btnPagar.textContent = '✅ Ya transferí, avisar'; }
+      if (btnEfectivo) { btnEfectivo.disabled = false; btnEfectivo.textContent = '✅ Confirmar pedido en efectivo'; }
     }
   }
 
@@ -1490,10 +1580,11 @@ const PILLS = { pendiente:'🕐 Pendiente', aceptado:'✅ Aceptado', en_camino:'
 
 function renderAdminOrders() {
   const today = new Date().toDateString();
-  const pend = adminOrders.filter(o => o.status === 'pendiente').length;
-  const cam = adminOrders.filter(o => o.status === 'en_camino').length;
-  const ent = adminOrders.filter(o => o.status === 'entregado' && new Date(o.updated_at).toDateString() === today).length;
-  const total = adminOrders.filter(o => o.status === 'entregado' && new Date(o.updated_at).toDateString() === today).reduce((s,o) => s + o.total, 0);
+  const activeOrders = adminOrders.filter(o => !o.archivado);
+  const pend = activeOrders.filter(o => o.status === 'pendiente').length;
+  const cam = activeOrders.filter(o => o.status === 'en_camino').length;
+  const ent = adminOrders.filter(o => (o.status === 'entregado' || o.archivado) && new Date(o.updated_at).toDateString() === today).length;
+  const total = adminOrders.filter(o => (o.status === 'entregado' || o.archivado) && new Date(o.updated_at).toDateString() === today).reduce((s,o) => s + o.total, 0);
 
   document.getElementById('stat-pend').textContent = pend;
   document.getElementById('stat-cam').textContent = cam;
@@ -1502,14 +1593,14 @@ function renderAdminOrders() {
   document.getElementById('badge-pending').textContent = pend;
 
   const counts = { pendiente:0, aceptado:0, en_camino:0, entregado:0 };
-  adminOrders.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
-  document.getElementById('cnt-todos').textContent = adminOrders.length;
+  activeOrders.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
+  document.getElementById('cnt-todos').textContent = activeOrders.length;
   document.getElementById('cnt-pend').textContent = counts.pendiente;
   document.getElementById('cnt-acep').textContent = counts.aceptado;
   document.getElementById('cnt-cam').textContent = counts.en_camino;
   document.getElementById('cnt-ent').textContent = counts.entregado;
 
-  const filtered = currentFilter === 'todos' ? adminOrders : adminOrders.filter(o => o.status === currentFilter);
+  const filtered = (currentFilter === 'todos' ? adminOrders : adminOrders.filter(o => o.status === currentFilter)).filter(o => !o.archivado);
   const list = document.getElementById('orders-list');
 
   if (!filtered.length) {
@@ -1536,7 +1627,8 @@ function renderAdminOrders() {
     } else if (order.status === 'en_camino') {
       actions = `<button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">🏠 Marcar entregado</button>`;
     } else {
-      actions = `<button class="action-btn btn-delete" onclick="adminDeleteOrder('${order.id}')">🗑 Borrar</button>`;
+      actions = `<button class="action-btn btn-accept" onclick="adminArchiveOrder('${order.id}')">📦 Archivar</button>
+                 <button class="action-btn btn-delete" onclick="adminDeleteOrder('${order.id}')">🗑 Borrar</button>`;
     }
 
     card.innerHTML = `
@@ -1545,7 +1637,7 @@ function renderAdminOrders() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
             <div class="order-id">${order.id}</div>
             <span class="status-pill pill-${order.status}">${PILLS[order.status]||order.status}</span>
-            ${order.pago_avisado ? '<span class="status-pill" style="background:#d4edda;color:var(--green)">💳 Pagó</span>' : ''}
+            ${order.pago_avisado && order.metodo_pago === 'efectivo' ? '<span class="status-pill" style="background:#fff3cd;color:#856404">💵 Efectivo</span>' : order.pago_avisado ? '<span class="status-pill" style="background:#d4edda;color:var(--green)">💳 Transferencia</span>' : ''}
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
           <div class="order-name">${order.nombre}</div>
@@ -1597,8 +1689,14 @@ async function adminUpdateStatus(id, status) {
   showToast(msgs[status] || 'Actualizado');
 }
 
+async function adminArchiveOrder(id) {
+  if (!confirm('¿Archivar este pedido? Va a desaparecer de la lista pero se mantiene en las ganancias.')) return;
+  await db.from('chipas_orders').update({ archivado: true, updated_at: new Date().toISOString() }).eq('id', id);
+  showToast('📦 Pedido archivado');
+}
+
 async function adminDeleteOrder(id) {
-  if (!confirm('¿Borrar este pedido?')) return;
+  if (!confirm('¿Borrar este pedido? Se elimina completamente y NO cuenta en las ganancias.')) return;
   await db.from('chipas_orders').delete().eq('id', id);
   showToast('🗑 Pedido eliminado');
 }
