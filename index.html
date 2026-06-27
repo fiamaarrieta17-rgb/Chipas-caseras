@@ -42,6 +42,26 @@ button, input, textarea { font-family: inherit; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in { animation: fadeUp 0.45s ease both; }
 
+
+/* ===== HISTORIAL ===== */
+.historial-filter { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.historial-filter input[type="date"] { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; font-family: inherit; background: var(--cream); color: var(--text); outline: none; }
+.historial-filter input[type="date"]:focus { border-color: var(--gold); }
+.historial-filter button { padding: 8px 14px; background: var(--navy); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.historial-filter button:hover { background: var(--gold); }
+.historial-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.historial-day-card { background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+.historial-day-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.historial-day-val { font-size: 22px; font-weight: 800; color: var(--gold); }
+.historial-day-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.historial-table { width: 100%; border-collapse: collapse; }
+.historial-table th { text-align: left; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1.5px solid var(--border); }
+.historial-table td { padding: 10px 10px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.historial-table tr:last-child td { border-bottom: none; }
+.historial-table td:last-child { font-weight: 700; color: var(--gold); text-align: right; }
+.historial-table td:first-child { color: var(--muted); font-size: 12px; }
+.historial-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+
 /* ===== LOADING ===== */
 #loading-screen {
   position: fixed; inset: 0;
@@ -138,6 +158,18 @@ button, input, textarea { font-family: inherit; }
 
 .arrived-banner { background: var(--green); color: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; text-align: center; display: none; }
 .arrived-banner h3 { font-size: 18px; margin-bottom: 2px; }
+.closed-banner { background: var(--navy); color: #fff; border-radius: 14px; padding: 20px 18px; margin-bottom: 20px; text-align: center; }
+.closed-banner h3 { font-size: 20px; margin-bottom: 4px; }
+.closed-banner p { font-size: 13px; opacity: 0.75; }
+.store-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--cream2); border-radius: 12px; margin-bottom: 8px; }
+.store-toggle span { font-size: 14px; font-weight: 600; color: var(--navy); }
+.toggle-switch { position: relative; width: 44px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 24px; transition: 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+input:checked + .toggle-slider { background: var(--green); }
+input:checked + .toggle-slider:before { transform: translateX(20px); }
+
 .arrived-banner p { font-size: 13px; opacity: 0.85; }
 
 .section-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
@@ -473,6 +505,12 @@ button, input, textarea { font-family: inherit; }
       </div>
     </div>
 
+    
+    <div id="closed-banner" class="closed-banner" style="display:none">
+      <h3>🔒 Estamos cerrados</h3>
+      <p id="closed-banner-text">Volvemos pronto. ¡Gracias por tu paciencia!</p>
+    </div>
+
     <div id="arrived-banner" class="arrived-banner">
       <h3>🎉 ¡Llegaron tus chipas!</h3>
       <p>Tu pedido fue entregado. ¡Disfrutá!</p>
@@ -617,6 +655,7 @@ button, input, textarea { font-family: inherit; }
         <div class="nav-label">Gestión</div>
         <div class="nav-item active" id="nav-pedidos" onclick="showAdminPanel('pedidos')">📦 Pedidos <span class="badge" id="badge-pending">0</span></div>
         <div class="nav-item" id="nav-precios" onclick="showAdminPanel('precios')">💰 Productos y Precios</div>
+        <div class="nav-item" id="nav-historial" onclick="showAdminPanel('historial')">📊 Historial de ganancias</div>
         <div class="nav-label">Negocio</div>
         <div class="nav-item" id="nav-config" onclick="showAdminPanel('config')">⚙️ Configuración</div>
         <div class="nav-item" id="nav-seguridad" onclick="showAdminPanel('seguridad')">🔒 Seguridad</div>
@@ -717,6 +756,30 @@ button, input, textarea { font-family: inherit; }
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
         </div>
 
+        <!-- HORARIO -->
+        <div class="config-card" style="max-width:480px">
+          <h2>🕐 Horario de atención</h2>
+          <div class="config-intro">Fuera de este horario los clientes ven un cartel de cerrado y no pueden hacer pedidos.</div>
+          <div class="store-toggle">
+            <span id="store-status-label">🟢 Tienda abierta</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="cfg-tienda-abierta" onchange="toggleTienda(this)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>APERTURA</label>
+              <input type="time" id="cfg-horario-apertura" />
+            </div>
+            <div class="form-group">
+              <label>CIERRE</label>
+              <input type="time" id="cfg-horario-cierre" />
+            </div>
+          </div>
+          <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
+        </div>
+
         <!-- ENVÍO A DOMICILIO -->
         <div class="config-card" style="max-width:480px">
           <h2>🛵 Envío a domicilio</h2>
@@ -730,6 +793,31 @@ button, input, textarea { font-family: inherit; }
         </div>
 
         <!-- SEGURIDAD -->
+
+        <!-- HISTORIAL -->
+        <div id="admin-panel-historial" style="display:none">
+          <div class="historial-filter">
+            <input type="date" id="hist-desde" />
+            <input type="date" id="hist-hasta" />
+            <button onclick="loadHistorial()">🔍 Buscar</button>
+            <button onclick="setHistorialHoy()" style="background:var(--gold)">Hoy</button>
+            <button onclick="setHistorialSemana()" style="background:var(--muted)">7 días</button>
+            <button onclick="setHistorialMes()" style="background:var(--muted)">30 días</button>
+          </div>
+          <div class="historial-summary">
+            <div class="historial-day-card"><div class="historial-day-label">Total</div><div class="historial-day-val" id="hist-total">$0</div><div class="historial-day-sub">En el período</div></div>
+            <div class="historial-day-card"><div class="historial-day-label">Pedidos</div><div class="historial-day-val" id="hist-count">0</div><div class="historial-day-sub">Entregados</div></div>
+            <div class="historial-day-card"><div class="historial-day-label">Promedio</div><div class="historial-day-val" id="hist-avg">$0</div><div class="historial-day-sub">Por pedido</div></div>
+          </div>
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden">
+            <table class="historial-table">
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>Entrega</th><th>Total</th></tr></thead>
+              <tbody id="hist-body"></tbody>
+            </table>
+            <div class="historial-empty" id="hist-empty" style="display:none">Sin pedidos en este período</div>
+          </div>
+        </div>
+
         <div id="admin-panel-seguridad" style="display:none">
           <div class="config-card">
             <h2>🔑 Cambiar contraseña</h2>
@@ -933,7 +1021,10 @@ const DEFAULT_SETTINGS = {
   payment_alias: '',
   payment_titular: '',
   payment_link: '',
-  delivery_fee: 1000
+  delivery_fee: 1000,
+  horario_apertura: '09:00',
+  horario_cierre: '21:00',
+  tienda_cerrada: false
 };
 let settings = { ...DEFAULT_SETTINGS };
 let deliveryMethod = null; // 'retiro' | 'domicilio'
@@ -1036,6 +1127,11 @@ function renderConfigPanel() {
   document.getElementById('cfg-titular').value = settings.payment_titular || '';
   document.getElementById('cfg-mplink').value = settings.payment_link || '';
   document.getElementById('cfg-delivery-fee').value = settings.delivery_fee ?? 1000;
+  document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
+  document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
+  const abierta = !settings.tienda_cerrada && isStoreOpenNow();
+  document.getElementById('cfg-tienda-abierta').checked = !settings.tienda_cerrada;
+  document.getElementById('store-status-label').textContent = settings.tienda_cerrada ? '🔴 Tienda cerrada manualmente' : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
   previewConfig();
 }
 function previewDeliveryFee() {
@@ -1049,7 +1145,10 @@ async function saveSettings() {
     payment_alias: document.getElementById('cfg-alias').value.trim(),
     payment_titular: document.getElementById('cfg-titular').value.trim(),
     payment_link: document.getElementById('cfg-mplink').value.trim(),
-    delivery_fee: parseInt(document.getElementById('cfg-delivery-fee').value, 10) || 0
+    delivery_fee: parseInt(document.getElementById('cfg-delivery-fee').value, 10) || 0,
+    horario_apertura: document.getElementById('cfg-horario-apertura').value || '09:00',
+    horario_cierre: document.getElementById('cfg-horario-cierre').value || '21:00',
+    tienda_cerrada: !document.getElementById('cfg-tienda-abierta').checked
   };
   settings = { ...settings, ...newSettings };
   saveLocalSettings();
@@ -1175,6 +1274,48 @@ function playNotificationSound() {
   } catch (e) {}
 }
 
+
+// ===== HORARIO =====
+function isStoreOpenNow() {
+  const now = new Date();
+  const [aH, aM] = (settings.horario_apertura || '09:00').split(':').map(Number);
+  const [cH, cM] = (settings.horario_cierre || '21:00').split(':').map(Number);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const abrMin = aH * 60 + aM;
+  const cieMin = cH * 60 + cM;
+  return nowMin >= abrMin && nowMin < cieMin;
+}
+
+function checkStoreClosed() {
+  if (isAdmin) return;
+  const banner = document.getElementById('closed-banner');
+  const form = document.getElementById('order-form-card');
+  const cart = document.getElementById('cart-summary');
+  const submitBtn = document.getElementById('btn-submit');
+  const isClosed = settings.tienda_cerrada || !isStoreOpenNow();
+  if (banner) {
+    banner.style.display = isClosed ? 'block' : 'none';
+    const [aH, aM] = (settings.horario_apertura || '09:00').split(':').map(Number);
+    const [cH, cM] = (settings.horario_cierre || '21:00').split(':').map(Number);
+    document.getElementById('closed-banner-text').textContent = settings.tienda_cerrada
+      ? 'Volvemos pronto. ¡Gracias por tu paciencia!'
+      : `Nuestro horario es de ${String(aH).padStart(2,'0')}:${String(aM).padStart(2,'0')} a ${String(cH).padStart(2,'0')}:${String(cM).padStart(2,'0')} hs.`;
+  }
+  if (form) form.style.display = isClosed ? 'none' : 'block';
+  if (cart) cart.style.display = isClosed ? 'none' : (cart.classList.contains('visible') ? 'block' : 'none');
+  if (submitBtn) submitBtn.disabled = isClosed;
+}
+
+async function toggleTienda(el) {
+  settings.tienda_cerrada = !el.checked;
+  document.getElementById('store-status-label').textContent = settings.tienda_cerrada ? '🔴 Tienda cerrada manualmente' : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
+  saveLocalSettings();
+  try {
+    await db.from('chipas_settings').upsert({ id: 'main', tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString() });
+  } catch(e) {}
+  showToast(settings.tienda_cerrada ? '🔴 Tienda cerrada' : '🟢 Tienda abierta');
+}
+
 // ===== INIT =====
 async function init() {
   await loadSettings();
@@ -1199,6 +1340,7 @@ async function init() {
         applyBranding();
         updateCartSummary();
         if (isAdmin && document.getElementById('admin-panel-config').style.display !== 'none') renderConfigPanel();
+        if (!isAdmin) checkStoreClosed();
       }
     })
     .subscribe();
@@ -1221,6 +1363,8 @@ async function init() {
 // ==================== CLIENTE ====================
 function initCliente() {
   renderProducts();
+  checkStoreClosed();
+  setInterval(checkStoreClosed, 60000); // re-chequear cada minuto
   if (myOrderId) checkMyOrder();
 
   db.channel('my-order')
@@ -1466,7 +1610,9 @@ function notifyStatusChangeIfNeeded(order) {
   const prev = sessionStorage.getItem(key);
   sessionStorage.setItem(key, order.status);
   if (prev === null || prev === order.status) return;
-  if (order.status === 'en_camino') {
+  if (order.status === 'aceptado') {
+    sendBrowserNotification('✅ ¡Tu pedido fue aceptado!', 'Ya estamos preparando tus chipas 💛', 'chipas-status-' + order.id);
+  } else if (order.status === 'en_camino') {
     sendBrowserNotification('🛵 ¡Tu pedido está en camino!', 'Ya salió, te llega pronto.', 'chipas-status-' + order.id);
   } else if (order.status === 'entregado') {
     sendBrowserNotification('🏠 ¡Tus chipas llegaron!', 'Que las disfrutes 💛', 'chipas-status-' + order.id);
@@ -1795,9 +1941,9 @@ function filterOrders(status, el) {
 let localPrices = []; // edited copies
 let deletedIds = new Set();
 
-const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', config: 'Configuración', seguridad: 'Seguridad' };
+const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', config: 'Configuración', seguridad: 'Seguridad' };
 async function showAdminPanel(panel) {
-  ['pedidos','precios','config','seguridad'].forEach(p => {
+  ['pedidos','precios','historial','config','seguridad'].forEach(p => {
     document.getElementById('admin-panel-' + p).style.display = p === panel ? 'block' : 'none';
   });
   document.getElementById('panel-title').textContent = PANEL_TITLES[panel] || panel;
@@ -1805,6 +1951,7 @@ async function showAdminPanel(panel) {
   document.getElementById('nav-' + panel).classList.add('active');
   if (panel === 'precios') renderPricesPanel();
   if (panel === 'config') renderConfigPanel();
+  if (panel === 'historial') { setHistorialHoy(); loadHistorial(); }
   closeSidebar();
 }
 
@@ -1912,6 +2059,68 @@ function toggleSidebar() {
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
+}
+
+
+// ===== HISTORIAL DE GANANCIAS =====
+function toDateStr(d) {
+  return d.toISOString().split('T')[0];
+}
+function setHistorialHoy() {
+  const hoy = toDateStr(new Date());
+  document.getElementById('hist-desde').value = hoy;
+  document.getElementById('hist-hasta').value = hoy;
+}
+function setHistorialSemana() {
+  const hasta = new Date();
+  const desde = new Date(); desde.setDate(desde.getDate() - 6);
+  document.getElementById('hist-desde').value = toDateStr(desde);
+  document.getElementById('hist-hasta').value = toDateStr(hasta);
+}
+function setHistorialMes() {
+  const hasta = new Date();
+  const desde = new Date(); desde.setDate(desde.getDate() - 29);
+  document.getElementById('hist-desde').value = toDateStr(desde);
+  document.getElementById('hist-hasta').value = toDateStr(hasta);
+}
+async function loadHistorial() {
+  const desde = document.getElementById('hist-desde').value;
+  const hasta = document.getElementById('hist-hasta').value;
+  if (!desde || !hasta) { showToast('Elegí un rango de fechas'); return; }
+  const desdeISO = desde + 'T00:00:00.000Z';
+  const hastaISO = hasta + 'T23:59:59.999Z';
+  const { data, error } = await db.from('chipas_orders')
+    .select('id,nombre,entrega,total,status,created_at,updated_at')
+    .or('status.eq.entregado,archivado.eq.true')
+    .gte('updated_at', desdeISO)
+    .lte('updated_at', hastaISO)
+    .order('updated_at', { ascending: false });
+
+  const tbody = document.getElementById('hist-body');
+  const empty = document.getElementById('hist-empty');
+  tbody.innerHTML = '';
+
+  if (error || !data || !data.length) {
+    empty.style.display = 'block';
+    document.getElementById('hist-total').textContent = '$0';
+    document.getElementById('hist-count').textContent = '0';
+    document.getElementById('hist-avg').textContent = '$0';
+    return;
+  }
+  empty.style.display = 'none';
+  const totalGan = data.reduce((s, o) => s + (o.total || 0), 0);
+  const avg = Math.round(totalGan / data.length);
+  document.getElementById('hist-total').textContent = formatPrice(totalGan);
+  document.getElementById('hist-count').textContent = data.length;
+  document.getElementById('hist-avg').textContent = formatPrice(avg);
+
+  data.forEach(o => {
+    const tr = document.createElement('tr');
+    const fecha = new Date(o.updated_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' });
+    const hora = new Date(o.updated_at).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+    tr.innerHTML = `<td>${fecha} ${hora}</td><td>${o.nombre}</td><td>${(o.entrega||'domicilio')==='domicilio'?'🛵':'🏃'}</td><td>${formatPrice(o.total)}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 // START
