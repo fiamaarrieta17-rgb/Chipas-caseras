@@ -23,7 +23,9 @@ self.addEventListener('push', (event) => {
     body: data.body || '',
     tag: data.tag || 'chipas-push',
     renotify: true,
-    requireInteraction: false
+    requireInteraction: false,
+    icon: '/icon-512.png',
+    badge: '/badge-96.png'
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
