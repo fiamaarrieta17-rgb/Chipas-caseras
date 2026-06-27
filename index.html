@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chipas Premium</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" id="pwa-manifest" href="manifest.json">
 <meta name="theme-color" content="#3d1f0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -789,6 +789,11 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 
 // ===== DETECT VIEW =====
 const isAdmin = window.location.search.includes('admin');
+// Cargar manifest correcto según rol
+(function() {
+  const el = document.getElementById('pwa-manifest');
+  if (el && isAdmin) el.setAttribute('href', 'manifest-admin.json');
+})();
 
 // ===== AUTH =====
 const DEFAULT_PASSWORD = 'chipas2026';
