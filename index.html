@@ -819,7 +819,7 @@ function doLogin() {
   if (entered === getStoredPassword()) {
     errEl.classList.remove('show');
     adminUnlocked = true;
-    sessionStorage.setItem('chipas_admin_unlocked', '1');
+    localStorage.setItem('chipas_admin_unlocked', '1');
     document.getElementById('view-login').style.display = 'none';
     document.getElementById('view-admin').style.display = 'block';
     initAdmin();
@@ -844,7 +844,7 @@ function doLoginDni() {
   if (dni === storedDni && pin === storedPin) {
     errEl.classList.remove('show');
     adminUnlocked = true;
-    sessionStorage.setItem('chipas_admin_unlocked', '1');
+    localStorage.setItem('chipas_admin_unlocked', '1');
     document.getElementById('view-login').style.display = 'none';
     document.getElementById('view-admin').style.display = 'block';
     initAdmin();
@@ -858,7 +858,7 @@ function doLoginDni() {
 
 function doLogout() {
   if (!confirm('¿Cerrar sesión?')) return;
-  sessionStorage.removeItem('chipas_admin_unlocked');
+  localStorage.removeItem('chipas_admin_unlocked');
   adminUnlocked = false;
   document.getElementById('view-admin').style.display = 'none';
   document.getElementById('view-login').style.display = 'flex';
@@ -1205,7 +1205,7 @@ async function init() {
 
   if (isAdmin) {
     // Check session
-    if (sessionStorage.getItem('chipas_admin_unlocked') === '1') {
+    if (localStorage.getItem('chipas_admin_unlocked') === '1') {
       adminUnlocked = true;
       document.getElementById('view-admin').style.display = 'block';
       initAdmin();
