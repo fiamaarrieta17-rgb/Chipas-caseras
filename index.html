@@ -787,11 +787,11 @@ const DEFAULT_PASSWORD = 'chipas2026';
 let adminUnlocked = false;
 let lastKnownOrderCount = -1;
 
-function getStoredPassword() {
-  return localStorage.getItem('chipas_admin_password') || DEFAULT_PASSWORD;
-}
-function getStoredDni() { return localStorage.getItem('chipas_admin_dni') || ''; }
-function getStoredPin() { return localStorage.getItem('chipas_admin_pin') || ''; }
+// Credenciales en memoria, cargadas desde Supabase (chipas_settings)
+// No se guardan en localStorage para que funcionen en cualquier dispositivo
+function getStoredPassword() { return settings.admin_password || DEFAULT_PASSWORD; }
+function getStoredDni() { return settings.admin_dni || ''; }
+function getStoredPin() { return settings.admin_pin || ''; }
 
 function switchLoginTab(tab) {
   document.getElementById('tab-pass').classList.toggle('active', tab === 'pass');
@@ -851,7 +851,7 @@ function doLogout() {
   document.getElementById('view-login').style.display = 'flex';
 }
 
-function changePassword() {
+async function changePassword() {
   const current = document.getElementById('sec-pass-current').value;
   const newPass = document.getElementById('sec-pass-new').value;
   const confirm = document.getElementById('sec-pass-confirm').value;
@@ -862,14 +862,16 @@ function changePassword() {
   if (newPass.length < 6) { errEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres'; errEl.classList.add('show'); return; }
   if (newPass !== confirm) { errEl.textContent = 'Las contraseñas no coinciden'; errEl.classList.add('show'); return; }
 
-  localStorage.setItem('chipas_admin_password', newPass);
+  const { error } = await db.from('chipas_settings').update({ admin_password: newPass }).eq('id', 'main');
+  if (error) { errEl.textContent = 'Error al guardar, intentá de nuevo'; errEl.classList.add('show'); return; }
+  settings.admin_password = newPass;
   document.getElementById('sec-pass-current').value = '';
   document.getElementById('sec-pass-new').value = '';
   document.getElementById('sec-pass-confirm').value = '';
   showToast('✅ Contraseña actualizada');
 }
 
-function saveDniPin() {
+async function saveDniPin() {
   const dni = document.getElementById('sec-dni').value.trim();
   const pin = document.getElementById('sec-pin').value.trim();
   const confirm = document.getElementById('sec-pin-confirm').value.trim();
@@ -880,8 +882,10 @@ function saveDniPin() {
   if (!/^\d{6}$/.test(pin)) { errEl.textContent = 'El PIN debe tener exactamente 6 dígitos numéricos'; errEl.classList.add('show'); return; }
   if (pin !== confirm) { errEl.textContent = 'Los PINs no coinciden'; errEl.classList.add('show'); return; }
 
-  localStorage.setItem('chipas_admin_dni', dni);
-  localStorage.setItem('chipas_admin_pin', pin);
+  const { error } = await db.from('chipas_settings').update({ admin_dni: dni, admin_pin: pin }).eq('id', 'main');
+  if (error) { errEl.textContent = 'Error al guardar, intentá de nuevo'; errEl.classList.add('show'); return; }
+  settings.admin_dni = dni;
+  settings.admin_pin = pin;
   document.getElementById('sec-pin').value = '';
   document.getElementById('sec-pin-confirm').value = '';
   showToast('🪪 DNI + PIN guardados correctamente');
