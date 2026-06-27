@@ -1497,6 +1497,11 @@ function updateStatusTracker(order) {
   }
 
   statusEl.style.display = 'block';
+  // Mostrar link de seguimiento siempre que haya un pedido activo
+  if (order.status !== 'entregado') {
+    document.getElementById('success-msg').classList.add('visible');
+    showTrackingLink(order.id);
+  }
   const currentStep = STATUS_MAP[order.status] || 0;
   const emojis = ['📋','✅','🛵','🏠'];
   const labels = ['Recibido','Aceptado','En camino','Llegó'];
@@ -1595,15 +1600,39 @@ function initAdmin() {
     document.getElementById('admin-clock').textContent = now.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
   }, 1000);
 
+  // Pedir permiso de notificaciones automáticamente al entrar al panel
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        subscribeToPush('admin', null);
+        showToast('🔔 Notificaciones activadas');
+      }
+    });
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    subscribeToPush('admin', null);
+  }
+
   db.channel('admin-orders')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_orders' }, (payload) => {
       loadAdminOrders();
       if (payload.new) {
-        const alert = document.getElementById('new-order-alert');
+        const alertEl = document.getElementById('new-order-alert');
         document.getElementById('new-order-alert-text').textContent = `Nuevo pedido de ${payload.new.nombre} — ${formatPrice(payload.new.total)}`;
-        alert.classList.add('visible');
+        alertEl.classList.add('visible');
         playNotificationSound();
         sendBrowserNotification('🔔 ¡Nuevo pedido!', `${payload.new.nombre} — ${formatPrice(payload.new.total)}`, 'chipas-admin-new-' + payload.new.id);
+        // Hacer parpadear el título de la pestaña si está en segundo plano
+        if (document.hidden) {
+          let blink = true;
+          const original = document.title;
+          const blinkInterval = setInterval(() => {
+            document.title = blink ? '🔔 NUEVO PEDIDO' : original;
+            blink = !blink;
+          }, 800);
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) { clearInterval(blinkInterval); document.title = original; }
+          }, { once: true });
+        }
       }
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders' }, (payload) => {
@@ -1611,6 +1640,9 @@ function initAdmin() {
       if (payload.new && payload.old && !payload.old.pago_avisado && payload.new.pago_avisado) {
         playNotificationSound();
         sendBrowserNotification('💳 Pago confirmado', `${payload.new.nombre} avisó que ya transfirió — ${formatPrice(payload.new.total)}`, 'chipas-admin-pago-' + payload.new.id);
+        const alertEl = document.getElementById('new-order-alert');
+        document.getElementById('new-order-alert-text').textContent = `💳 ${payload.new.nombre} avisó que ya pagó — ${formatPrice(payload.new.total)}`;
+        alertEl.classList.add('visible');
       }
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chipas_orders' }, () => { loadAdminOrders(); })
