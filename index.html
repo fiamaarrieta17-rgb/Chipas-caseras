@@ -205,6 +205,10 @@ button, input, textarea { font-family: inherit; }
 .btn-mp { width: 100%; padding: 13px; background: #009ee3; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; transition: background 0.15s, transform 0.1s; }
 .btn-mp:hover { background: #0089c7; }
 .btn-mp:active { transform: scale(0.99); }
+.btn-paid { width: 100%; padding: 13px; background: var(--green); color: #fff; border: none; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: background 0.15s, transform 0.1s, opacity 0.2s; }
+.btn-paid:hover { background: #246b43; }
+.btn-paid:active { transform: scale(0.99); }
+.btn-paid:disabled { opacity: 0.6; cursor: not-allowed; }
 .payment-hint { font-size: 11px; color: var(--muted); text-align: center; }
 
 .edit-btn { width: 100%; padding: 12px; background: transparent; color: var(--navy); border: 1.5px solid var(--navy); border-radius: 10px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
@@ -442,6 +446,9 @@ button, input, textarea { font-family: inherit; }
         <div class="status-step"><div class="step-circle" id="step-3">🏠</div><div class="step-label" id="label-3">Llegó</div></div>
       </div>
       <div id="my-order-detail"></div>
+      <div style="text-align:center;margin-top:10px">
+        <a style="font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer" onclick="requestNotificationPermission()">🔔 Activar avisos en este dispositivo</a>
+      </div>
     </div>
 
     <div id="arrived-banner" class="arrived-banner">
@@ -474,6 +481,7 @@ button, input, textarea { font-family: inherit; }
       </div>
       <div class="payment-titular" id="payment-titular"></div>
       <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
+      <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
       <p class="payment-hint">Una vez que transferís, te confirmamos el pedido.</p>
     </div>
 
@@ -557,6 +565,7 @@ button, input, textarea { font-family: inherit; }
         <div class="nav-item" id="nav-seguridad" onclick="showAdminPanel('seguridad')">🔒 Seguridad</div>
       </nav>
       <div class="sidebar-footer">
+        <a onclick="requestNotificationPermission()">🔔 Activar notificaciones</a>
         <a onclick="goToClient()">🛒 Ver página de clientes →</a>
         <button class="btn-logout" onclick="doLogout()">🚪 Cerrar sesión</button>
       </div>
@@ -752,6 +761,7 @@ function doLogin() {
     document.getElementById('view-login').style.display = 'none';
     document.getElementById('view-admin').style.display = 'block';
     initAdmin();
+    requestNotificationPermission();
   } else {
     errEl.classList.add('show');
     document.getElementById('login-password').value = '';
@@ -776,6 +786,7 @@ function doLoginDni() {
     document.getElementById('view-login').style.display = 'none';
     document.getElementById('view-admin').style.display = 'block';
     initAdmin();
+    requestNotificationPermission();
   } else {
     errEl.textContent = 'DNI o PIN incorrecto';
     errEl.classList.add('show');
@@ -996,9 +1007,103 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// ===== NOTIFICACIONES (push real, funciona con la página cerrada) =====
+// Clave pública VAPID. No es secreta, puede ir en el código sin problema.
+const VAPID_PUBLIC_KEY = 'BAOx1Z1MKl2zd-JltPD835X6VA7PaxgRKLiS-HSihNuaLkK1qT4UDBRi1s9q7VfeEhFuuc3tFUY5X6z4bfPsIiE';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function registerServiceWorker() {
+  try {
+    if (!('serviceWorker' in navigator)) return null;
+    return await navigator.serviceWorker.register('/sw.js');
+  } catch (e) { console.error('No se pudo registrar el service worker', e); return null; }
+}
+
+async function subscribeToPush(role, orderId) {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const subJson = sub.toJSON();
+    await db.from('chipas_push_subs').upsert({
+      app: 'chipas',
+      role,
+      order_id: role === 'client' ? orderId : null,
+      endpoint: subJson.endpoint,
+      p256dh: subJson.keys.p256dh,
+      auth: subJson.keys.auth
+    }, { onConflict: 'endpoint' });
+  } catch (e) { console.error('Error al suscribirse a notificaciones push', e); }
+}
+
+function requestNotificationPermission() {
+  try {
+    if (!('Notification' in window)) {
+      showToast('Tu navegador no soporta notificaciones');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      showToast('🔕 Están bloqueadas. Activalas desde la configuración del navegador');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      subscribeToPush(isAdmin ? 'admin' : 'client', myOrderId);
+      showToast('🔔 Notificaciones ya activadas');
+      return;
+    }
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        subscribeToPush(isAdmin ? 'admin' : 'client', myOrderId);
+        showToast('🔔 ¡Notificaciones activadas!');
+      } else {
+        showToast('🔕 No se activaron las notificaciones');
+      }
+    });
+  } catch (e) {}
+}
+// Aviso "al toque" mientras la página está abierta (más rápido que esperar el push).
+// El push real (sw.js) cubre el caso de la página/app cerrada.
+function sendBrowserNotification(title, body, tag) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification(title, { body, tag });
+  } catch (e) {}
+}
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const beep = (freq, delay) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq; g.gain.value = 0.3;
+      o.start(ctx.currentTime + delay);
+      o.stop(ctx.currentTime + delay + 0.15);
+    };
+    beep(880, 0);
+    beep(1100, 0.2);
+  } catch (e) {}
+}
+
 // ===== INIT =====
 async function init() {
   await loadSettings();
+  registerServiceWorker();
 
   const { data: priceData } = await db.from('chipas_prices').select('*').order('price');
   if (priceData && priceData.length) prices = priceData;
@@ -1203,7 +1308,25 @@ async function submitOrder() {
   document.getElementById('post-order-actions').style.display = 'block';
   document.getElementById('btn-submit').textContent = 'Hacer pedido →';
   showToast('✅ ¡Pedido enviado!');
+  requestNotificationPermission();
   checkMyOrder();
+}
+
+async function markAsPaid() {
+  if (!myOrderId) return;
+  const btn = document.getElementById('btn-ya-pague');
+  btn.disabled = true; btn.textContent = 'Avisando...';
+  const { error } = await db.from('chipas_orders').update({
+    pago_avisado: true, pago_avisado_at: new Date().toISOString()
+  }).eq('id', myOrderId);
+  if (error) {
+    showToast('❌ No se pudo avisar, intentá de nuevo');
+    btn.disabled = false; btn.textContent = '✅ Ya transferí, avisar';
+    console.error(error);
+    return;
+  }
+  btn.textContent = '✅ Ya avisaste que pagaste';
+  showToast('💳 Le avisamos que ya transferiste');
 }
 
 async function checkMyOrder() {
@@ -1212,9 +1335,22 @@ async function checkMyOrder() {
   if (data) updateStatusTracker(data);
 }
 
+function notifyStatusChangeIfNeeded(order) {
+  const key = 'chipas_last_status_' + order.id;
+  const prev = sessionStorage.getItem(key);
+  sessionStorage.setItem(key, order.status);
+  if (prev === null || prev === order.status) return;
+  if (order.status === 'en_camino') {
+    sendBrowserNotification('🛵 ¡Tu pedido está en camino!', 'Ya salió, te llega pronto.', 'chipas-status-' + order.id);
+  } else if (order.status === 'entregado') {
+    sendBrowserNotification('🏠 ¡Tus chipas llegaron!', 'Que las disfrutes 💛', 'chipas-status-' + order.id);
+  }
+}
+
 const STATUS_MAP = { pendiente: 0, aceptado: 1, en_camino: 2, entregado: 3 };
 function updateStatusTracker(order) {
   if (!order) return;
+  notifyStatusChangeIfNeeded(order);
   const statusEl = document.getElementById('my-order-status');
   const arrivedBanner = document.getElementById('arrived-banner');
   const paymentCard = document.getElementById('payment-card');
@@ -1259,6 +1395,11 @@ function updateStatusTracker(order) {
   if (showPayment) {
     document.getElementById('payment-amount').innerHTML = `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
     renderPaymentBox();
+    const btnPagar = document.getElementById('btn-ya-pague');
+    if (btnPagar) {
+      if (order.pago_avisado) { btnPagar.disabled = true; btnPagar.textContent = '✅ Ya avisaste que pagaste'; }
+      else { btnPagar.disabled = false; btnPagar.textContent = '✅ Ya transferí, avisar'; }
+    }
   }
 
   if (order.status === 'entregado') {
@@ -1320,19 +1461,17 @@ function initAdmin() {
         const alert = document.getElementById('new-order-alert');
         document.getElementById('new-order-alert-text').textContent = `Nuevo pedido de ${payload.new.nombre} — ${formatPrice(payload.new.total)}`;
         alert.classList.add('visible');
-        // play simple sound notification if possible
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.connect(g); g.connect(ctx.destination);
-          o.frequency.value = 880; g.gain.value = 0.3;
-          o.start(); o.stop(ctx.currentTime + 0.15);
-          setTimeout(() => { o.frequency.value = 1100; o.start(); o.stop(ctx.currentTime + 0.15); }, 200);
-        } catch(e) {}
+        playNotificationSound();
+        sendBrowserNotification('🔔 ¡Nuevo pedido!', `${payload.new.nombre} — ${formatPrice(payload.new.total)}`, 'chipas-admin-new-' + payload.new.id);
       }
     })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders' }, () => { loadAdminOrders(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders' }, (payload) => {
+      loadAdminOrders();
+      if (payload.new && payload.old && !payload.old.pago_avisado && payload.new.pago_avisado) {
+        playNotificationSound();
+        sendBrowserNotification('💳 Pago confirmado', `${payload.new.nombre} avisó que ya transfirió — ${formatPrice(payload.new.total)}`, 'chipas-admin-pago-' + payload.new.id);
+      }
+    })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chipas_orders' }, () => { loadAdminOrders(); })
     .subscribe();
 }
@@ -1406,6 +1545,7 @@ function renderAdminOrders() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
             <div class="order-id">${order.id}</div>
             <span class="status-pill pill-${order.status}">${PILLS[order.status]||order.status}</span>
+            ${order.pago_avisado ? '<span class="status-pill" style="background:#d4edda;color:var(--green)">💳 Pagó</span>' : ''}
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
           <div class="order-name">${order.nombre}</div>
