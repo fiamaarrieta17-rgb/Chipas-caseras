@@ -169,6 +169,15 @@ button, input, textarea { font-family: inherit; }
 .error { color: var(--red); font-size: 11px; margin-top: 4px; display: none; }
 .error.show { display: block; }
 
+.delivery-options { display: flex; gap: 10px; margin-bottom: 4px; }
+.delivery-option { flex: 1; padding: 14px 8px; border: 1.5px solid var(--border); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--cream); }
+.delivery-option:hover { border-color: var(--gold-light); }
+.delivery-option .d-icon { font-size: 22px; margin-bottom: 4px; }
+.delivery-option .d-label { font-size: 13px; font-weight: 700; color: var(--navy); }
+.delivery-option .d-fee { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.delivery-option.selected { border-color: var(--gold); background: #fffbf3; box-shadow: 0 0 0 3px rgba(201,147,58,0.15); }
+#address-fields { overflow: hidden; }
+
 .btn-submit { width: 100%; padding: 16px; background: var(--gold); color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; transition: background 0.2s, transform 0.1s, box-shadow 0.2s; box-shadow: 0 3px 10px rgba(201,147,58,0.3); }
 .btn-submit:hover { background: #b8832e; box-shadow: 0 4px 14px rgba(201,147,58,0.4); }
 .btn-submit:active { transform: scale(0.99); }
@@ -471,6 +480,22 @@ button, input, textarea { font-family: inherit; }
     <div class="form-card" id="order-form-card">
       <h2>📦 Tus datos de entrega</h2>
       <div class="form-group">
+        <label>¿CÓMO QUERÉS RECIBIR TU PEDIDO?</label>
+        <div class="delivery-options">
+          <div class="delivery-option" id="opt-retiro" onclick="setDeliveryMethod('retiro')">
+            <div class="d-icon">🏃</div>
+            <div class="d-label">Ir a buscar</div>
+            <div class="d-fee">Sin recargo</div>
+          </div>
+          <div class="delivery-option" id="opt-domicilio" onclick="setDeliveryMethod('domicilio')">
+            <div class="d-icon">🛵</div>
+            <div class="d-label">A domicilio</div>
+            <div class="d-fee" id="domicilio-fee-hint">+$1.000</div>
+          </div>
+        </div>
+        <div class="error" id="e-entrega">Elegí una opción para continuar</div>
+      </div>
+      <div class="form-group">
         <label>NOMBRE COMPLETO</label>
         <input type="text" id="f-nombre" placeholder="Juan García" />
         <div class="error" id="e-nombre">Ingresá tu nombre</div>
@@ -480,22 +505,24 @@ button, input, textarea { font-family: inherit; }
         <input type="tel" id="f-cel" placeholder="11 1234-5678" />
         <div class="error" id="e-cel">Ingresá tu celular</div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>CALLE</label>
-          <input type="text" id="f-calle" placeholder="Av. San Martín" />
-          <div class="error" id="e-calle">Ingresá la calle</div>
+      <div id="address-fields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>CALLE</label>
+            <input type="text" id="f-calle" placeholder="Av. San Martín" />
+            <div class="error" id="e-calle">Ingresá la calle</div>
+          </div>
+          <div class="form-group">
+            <label>ALTURA</label>
+            <input type="text" id="f-altura" placeholder="1234" />
+            <div class="error" id="e-altura">Nro.</div>
+          </div>
         </div>
         <div class="form-group">
-          <label>ALTURA</label>
-          <input type="text" id="f-altura" placeholder="1234" />
-          <div class="error" id="e-altura">Nro.</div>
+          <label>LOCALIDAD</label>
+          <input type="text" id="f-localidad" placeholder="Ej: Morón, La Matanza..." />
+          <div class="error" id="e-localidad">Ingresá la localidad</div>
         </div>
-      </div>
-      <div class="form-group">
-        <label>LOCALIDAD</label>
-        <input type="text" id="f-localidad" placeholder="Ej: Morón, La Matanza..." />
-        <div class="error" id="e-localidad">Ingresá la localidad</div>
       </div>
       <div class="form-group">
         <label>NOTAS (opcional)</label>
@@ -620,6 +647,18 @@ button, input, textarea { font-family: inherit; }
               <input type="text" id="cfg-mplink" placeholder="https://link.mercadopago.com.ar/tunegocio" />
               <div class="hint">Lo generás desde la app: Cobrar → Con un link o QR.</div>
             </div>
+          </div>
+          <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
+        </div>
+
+        <!-- ENVÍO A DOMICILIO -->
+        <div class="config-card" style="max-width:480px">
+          <h2>🛵 Envío a domicilio</h2>
+          <div class="config-intro">Cuando el cliente elige "A domicilio" se le suma este recargo al total del pedido. Si elige "Ir a buscar", no se cobra nada extra.</div>
+          <div class="form-group">
+            <label>RECARGO POR ENVÍO ($)</label>
+            <input type="number" id="cfg-delivery-fee" min="0" step="100" placeholder="Ej: 1000" oninput="previewDeliveryFee()" />
+            <div class="hint">Se aplica solo a pedidos a domicilio. Podés cambiarlo cuando quieras.</div>
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
         </div>
@@ -807,9 +846,11 @@ const DEFAULT_SETTINGS = {
   subtitle: 'Congeladas · Receta Casera',
   payment_alias: '',
   payment_titular: '',
-  payment_link: ''
+  payment_link: '',
+  delivery_fee: 1000
 };
 let settings = { ...DEFAULT_SETTINGS };
+let deliveryMethod = null; // 'retiro' | 'domicilio'
 
 // ===== BRANDING =====
 function loadLocalSettings() {
@@ -854,6 +895,13 @@ function renderPaymentBox() {
     titularEl.style.display = settings.payment_titular ? 'block' : 'none';
   }
   if (btnMp) btnMp.style.display = settings.payment_link ? 'flex' : 'none';
+  updateDeliveryFeeHint();
+}
+function updateDeliveryFeeHint() {
+  const hint = document.getElementById('domicilio-fee-hint');
+  if (!hint) return;
+  const fee = Number(settings.delivery_fee) || 0;
+  hint.textContent = fee > 0 ? `+${formatPrice(fee)}` : 'Sin recargo';
 }
 function copyAlias() {
   const text = settings.payment_alias || '';
@@ -901,7 +949,11 @@ function renderConfigPanel() {
   document.getElementById('cfg-alias').value = settings.payment_alias || '';
   document.getElementById('cfg-titular').value = settings.payment_titular || '';
   document.getElementById('cfg-mplink').value = settings.payment_link || '';
+  document.getElementById('cfg-delivery-fee').value = settings.delivery_fee ?? 1000;
   previewConfig();
+}
+function previewDeliveryFee() {
+  // Just a no-op hook in case we want live feedback later; value is read on save.
 }
 async function saveSettings() {
   const newSettings = {
@@ -910,11 +962,13 @@ async function saveSettings() {
     subtitle: document.getElementById('cfg-sub').value.trim() || DEFAULT_SETTINGS.subtitle,
     payment_alias: document.getElementById('cfg-alias').value.trim(),
     payment_titular: document.getElementById('cfg-titular').value.trim(),
-    payment_link: document.getElementById('cfg-mplink').value.trim()
+    payment_link: document.getElementById('cfg-mplink').value.trim(),
+    delivery_fee: parseInt(document.getElementById('cfg-delivery-fee').value, 10) || 0
   };
   settings = { ...settings, ...newSettings };
   saveLocalSettings();
   applyBranding();
+  updateCartSummary();
   try {
     const { error } = await db.from('chipas_settings').upsert({ id: 'main', ...newSettings, updated_at: new Date().toISOString() });
     if (error) throw error;
@@ -963,6 +1017,7 @@ async function init() {
         settings = { ...settings, ...payload.new };
         saveLocalSettings();
         applyBranding();
+        updateCartSummary();
         if (isAdmin && document.getElementById('admin-panel-config').style.display !== 'none') renderConfigPanel();
       }
     })
@@ -994,6 +1049,10 @@ function initCliente() {
       if (payload.eventType === 'DELETE' && payload.old.id === myOrderId) {
         myOrderId = null;
         sessionStorage.removeItem('chipas_order_id');
+        deliveryMethod = null;
+        document.getElementById('opt-retiro').classList.remove('selected');
+        document.getElementById('opt-domicilio').classList.remove('selected');
+        document.getElementById('address-fields').style.display = 'none';
         document.getElementById('my-order-status').style.display = 'none';
         document.getElementById('success-msg').classList.remove('visible');
         document.getElementById('post-order-actions').style.display = 'none';
@@ -1043,6 +1102,15 @@ function changeQty(id, delta, e) {
   renderProducts();
 }
 
+function setDeliveryMethod(method) {
+  deliveryMethod = method;
+  document.getElementById('opt-retiro').classList.toggle('selected', method === 'retiro');
+  document.getElementById('opt-domicilio').classList.toggle('selected', method === 'domicilio');
+  document.getElementById('address-fields').style.display = method === 'domicilio' ? 'block' : 'none';
+  document.getElementById('e-entrega').classList.remove('show');
+  updateCartSummary();
+}
+
 function updateCartSummary() {
   const cart = document.getElementById('cart-summary');
   const itemsEl = document.getElementById('cart-items');
@@ -1057,13 +1125,24 @@ function updateCartSummary() {
       lines += `<div class="cart-row"><span>${p.name} × ${q}</span><span>${formatPrice(sub)}</span></div>`;
     }
   });
+  const fee = Number(settings.delivery_fee) || 0;
+  if (hasItems && deliveryMethod === 'domicilio' && fee > 0) {
+    lines += `<div class="cart-row"><span>🛵 Envío a domicilio</span><span>${formatPrice(fee)}</span></div>`;
+    total += fee;
+  }
   if (hasItems) { cart.classList.add('visible'); itemsEl.innerHTML = lines; totalEl.textContent = formatPrice(total); }
   else cart.classList.remove('visible');
 }
 
 function validate() {
-  const fields = ['nombre','cel','calle','altura','localidad'];
   let ok = true;
+  if (!deliveryMethod) {
+    document.getElementById('e-entrega').classList.add('show');
+    ok = false;
+  } else {
+    document.getElementById('e-entrega').classList.remove('show');
+  }
+  const fields = deliveryMethod === 'domicilio' ? ['nombre','cel','calle','altura','localidad'] : ['nombre','cel'];
   fields.forEach(f => {
     const val = document.getElementById('f-'+f).value.trim();
     const err = document.getElementById('e-'+f);
@@ -1083,16 +1162,19 @@ async function submitOrder() {
   const items = prices.filter(p => (quantities[p.id]||0) > 0).map(p => ({
     id: p.id, name: p.name, qty: quantities[p.id], price: p.price, subtotal: p.price * quantities[p.id]
   }));
-  const total = items.reduce((s,i) => s + i.subtotal, 0);
+  const recargo = (deliveryMethod === 'domicilio') ? (Number(settings.delivery_fee) || 0) : 0;
+  const total = items.reduce((s,i) => s + i.subtotal, 0) + recargo;
   const orderId = (editMode && myOrderId) ? myOrderId : genId();
 
   const order = {
     id: orderId,
     nombre: document.getElementById('f-nombre').value.trim(),
     cel: document.getElementById('f-cel').value.trim(),
-    calle: document.getElementById('f-calle').value.trim(),
-    altura: document.getElementById('f-altura').value.trim(),
-    localidad: document.getElementById('f-localidad').value.trim(),
+    entrega: deliveryMethod,
+    calle: deliveryMethod === 'domicilio' ? document.getElementById('f-calle').value.trim() : '',
+    altura: deliveryMethod === 'domicilio' ? document.getElementById('f-altura').value.trim() : '',
+    localidad: deliveryMethod === 'domicilio' ? document.getElementById('f-localidad').value.trim() : '',
+    recargo,
     notas: document.getElementById('f-notas').value.trim(),
     items, total, status: 'pendiente',
     updated_at: new Date().toISOString(),
@@ -1143,6 +1225,10 @@ function updateStatusTracker(order) {
     document.getElementById('post-order-actions').style.display = 'none';
     document.getElementById('order-form-card').style.display = 'block';
     paymentCard.classList.remove('visible');
+    deliveryMethod = null;
+    document.getElementById('opt-retiro').classList.remove('selected');
+    document.getElementById('opt-domicilio').classList.remove('selected');
+    document.getElementById('address-fields').style.display = 'none';
     myOrderId = null; sessionStorage.removeItem('chipas_order_id');
     showToast('❌ Tu pedido fue cancelado');
     return;
@@ -1163,7 +1249,7 @@ function updateStatusTracker(order) {
   }
 
   document.getElementById('my-order-detail').innerHTML =
-    `Pedido <span>${order.id}</span> · Total: <span>${formatPrice(order.total)}</span>`;
+    `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🛵 A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>`;
 
   const postActions = document.getElementById('post-order-actions');
   const showPayment = (order.status === 'pendiente' || order.status === 'aceptado');
@@ -1187,10 +1273,11 @@ async function editOrder() {
   editMode = true;
   document.getElementById('f-nombre').value = order.nombre;
   document.getElementById('f-cel').value = order.cel;
-  document.getElementById('f-calle').value = order.calle;
-  document.getElementById('f-altura').value = order.altura;
-  document.getElementById('f-localidad').value = order.localidad;
+  document.getElementById('f-calle').value = order.calle || '';
+  document.getElementById('f-altura').value = order.altura || '';
+  document.getElementById('f-localidad').value = order.localidad || '';
   document.getElementById('f-notas').value = order.notas || '';
+  setDeliveryMethod(order.entrega || 'domicilio');
   quantities = {};
   order.items.forEach(i => { quantities[i.id] = i.qty; });
   renderProducts();
@@ -1204,7 +1291,10 @@ async function cancelOrder() {
   if (!confirm('¿Cancelar tu pedido?')) return;
   await db.from('chipas_orders').delete().eq('id', myOrderId);
   myOrderId = null; sessionStorage.removeItem('chipas_order_id');
-  quantities = {}; editMode = false;
+  quantities = {}; editMode = false; deliveryMethod = null;
+  document.getElementById('opt-retiro').classList.remove('selected');
+  document.getElementById('opt-domicilio').classList.remove('selected');
+  document.getElementById('address-fields').style.display = 'none';
   document.getElementById('my-order-status').style.display = 'none';
   document.getElementById('success-msg').classList.remove('visible');
   document.getElementById('post-order-actions').style.display = 'none';
@@ -1319,7 +1409,7 @@ function renderAdminOrders() {
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
           <div class="order-name">${order.nombre}</div>
-          <div class="order-meta">📱 ${order.cel} · ${timeAgo(order.created_at)}</div>
+          <div class="order-meta">${(order.entrega || 'domicilio') === 'domicilio' ? '🛵 Envío' : '🏃 Retira'} · 📱 ${order.cel} · ${timeAgo(order.created_at)}</div>
           ${order.edited_at ? `<div class="time-ago" style="color:var(--orange)">✏️ Modificado ${timeAgo(order.edited_at)}</div>` : ''}
         </div>
         <div style="text-align:right">
@@ -1328,16 +1418,24 @@ function renderAdminOrders() {
         </div>
       </div>
       <div class="order-body ${isOpen?'open':''}">
+        ${(order.entrega || 'domicilio') === 'domicilio' ? `
         <div class="address-box">
           <div style="font-size:16px;flex-shrink:0;margin-top:1px">📍</div>
           <div class="address-detail">
             <strong>${order.calle} ${order.altura}</strong>
             <span>${order.localidad}</span>
           </div>
-        </div>
+        </div>` : `
+        <div class="address-box">
+          <div style="font-size:16px;flex-shrink:0;margin-top:1px">🏃</div>
+          <div class="address-detail">
+            <strong>Retira en el local</strong>
+          </div>
+        </div>`}
         ${order.notas ? `<div class="notes-box">💬 ${order.notas}</div>` : ''}
         <div class="order-items">
           ${order.items.map(i => `<div class="order-item-row"><span>${i.name} × ${i.qty}</span><span style="font-weight:600">${formatPrice(i.subtotal)}</span></div>`).join('')}
+          ${order.recargo ? `<div class="order-item-row"><span>🛵 Envío a domicilio</span><span style="font-weight:600">${formatPrice(order.recargo)}</span></div>` : ''}
           <div class="order-item-row" style="font-weight:700;color:var(--gold)"><span>TOTAL</span><span>${formatPrice(order.total)}</span></div>
         </div>
         <div class="order-actions">${actions}</div>
