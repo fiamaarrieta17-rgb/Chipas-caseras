@@ -195,6 +195,10 @@ button, input, textarea { font-family: inherit; }
 .success-msg.visible { display: block; }
 .success-msg h3 { font-size: 18px; margin-bottom: 4px; }
 .success-msg p { font-size: 13px; opacity: 0.85; }
+.tracking-link-box { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+.tracking-link-box span { font-size: 11px; flex: 1; word-break: break-all; opacity: 0.9; }
+.tracking-link-box button { background: rgba(255,255,255,0.25); border: none; color: #fff; border-radius: 7px; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.tracking-link-box button:hover { background: rgba(255,255,255,0.35); }
 
 /* PAYMENT */
 .payment-card { background: #fff; border: 1.5px solid var(--border); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; display: none; box-shadow: 0 2px 10px rgba(26,39,68,0.05); }
@@ -485,6 +489,10 @@ button, input, textarea { font-family: inherit; }
     <div class="success-msg" id="success-msg">
       <h3>✅ ¡Pedido enviado!</h3>
       <p>Te avisamos cuando esté listo 💛</p>
+      <div class="tracking-link-box" id="tracking-link-box" style="display:none">
+        <span id="tracking-link-text"></span>
+        <button onclick="copyTrackingLink()">📋 Copiar</button>
+      </div>
     </div>
 
 <div class="payment-card" id="payment-card">
@@ -898,7 +906,16 @@ function goToClient() {
 // ===== STATE =====
 let prices = [];
 let quantities = {};
-let myOrderId = sessionStorage.getItem('chipas_order_id');
+// Recuperar orden desde URL (?seguimiento=), sessionStorage o localStorage
+const _urlParams = new URLSearchParams(window.location.search);
+const _urlOrderId = _urlParams.get('seguimiento');
+let myOrderId = _urlOrderId || sessionStorage.getItem('chipas_order_id') || localStorage.getItem('chipas_order_id');
+if (_urlOrderId) {
+  sessionStorage.setItem('chipas_order_id', _urlOrderId);
+  localStorage.setItem('chipas_order_id', _urlOrderId);
+  // Limpiar URL sin recargar
+  window.history.replaceState({}, '', window.location.pathname);
+}
 let editMode = false;
 let adminOrders = [];
 let currentFilter = 'todos';
@@ -1207,6 +1224,7 @@ function initCliente() {
       if (payload.eventType === 'DELETE' && payload.old.id === myOrderId) {
         myOrderId = null;
         sessionStorage.removeItem('chipas_order_id');
+        localStorage.removeItem('chipas_order_id');
         deliveryMethod = null;
         document.getElementById('opt-retiro').classList.remove('selected');
         document.getElementById('opt-domicilio').classList.remove('selected');
@@ -1354,15 +1372,34 @@ async function submitOrder() {
 
   myOrderId = orderId;
   sessionStorage.setItem('chipas_order_id', myOrderId);
+  localStorage.setItem('chipas_order_id', myOrderId);
   editMode = false;
 
   document.getElementById('order-form-card').style.display = 'none';
   document.getElementById('success-msg').classList.add('visible');
   document.getElementById('post-order-actions').style.display = 'block';
   document.getElementById('btn-submit').textContent = 'Hacer pedido →';
+  showTrackingLink(orderId);
   showToast('✅ ¡Pedido enviado!');
   requestNotificationPermission();
   checkMyOrder();
+}
+
+function showTrackingLink(orderId) {
+  const base = window.location.origin + window.location.pathname;
+  const link = base + '?seguimiento=' + orderId;
+  const box = document.getElementById('tracking-link-box');
+  const text = document.getElementById('tracking-link-text');
+  if (box && text) {
+    text.textContent = link;
+    box.style.display = 'flex';
+  }
+}
+
+function copyTrackingLink() {
+  const text = document.getElementById('tracking-link-text')?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => showToast('🔗 Link copiado'));
 }
 
 // ===== MÉTODO DE PAGO =====
@@ -1449,7 +1486,7 @@ function updateStatusTracker(order) {
     document.getElementById('opt-retiro').classList.remove('selected');
     document.getElementById('opt-domicilio').classList.remove('selected');
     document.getElementById('address-fields').style.display = 'none';
-    myOrderId = null; sessionStorage.removeItem('chipas_order_id');
+    myOrderId = null; sessionStorage.removeItem('chipas_order_id'); localStorage.removeItem('chipas_order_id');
     showToast('❌ Tu pedido fue cancelado');
     return;
   }
@@ -1499,6 +1536,11 @@ function updateStatusTracker(order) {
   if (order.status === 'entregado') {
     arrivedBanner.style.display = 'block';
     setTimeout(() => arrivedBanner.style.display = 'none', 8000);
+    // Limpiar el ID guardado: el pedido ya terminó
+    setTimeout(() => {
+      localStorage.removeItem('chipas_order_id');
+      sessionStorage.removeItem('chipas_order_id');
+    }, 60 * 60 * 1000); // 1 hora después de entregado
   }
 }
 
