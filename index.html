@@ -888,6 +888,119 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .rep-empty-state { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 14px; }
 .rep-empty-state .icon { font-size: 48px; margin-bottom: 12px; }
 .rep-empty-state h3 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+
+/* ===== REPARTIDOR CHAT ===== */
+.rep-chat-fab {
+  position: fixed; bottom: 24px; right: 20px; z-index: 500;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--blue); color: #fff; border: none;
+  font-size: 24px; cursor: pointer; display: none;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(26,109,181,0.5);
+  font-family: inherit;
+  transition: transform 0.18s, background 0.18s;
+}
+.rep-chat-fab:hover { background: #155a9a; transform: scale(1.07); }
+.rep-chat-fab .rep-chat-badge {
+  position: absolute; top: -4px; right: -4px;
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+.rep-chat-fab .rep-chat-badge.show { display: flex; }
+.rep-chat-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 600; display: none; align-items: flex-end; justify-content: center;
+}
+.rep-chat-modal-overlay.open { display: flex; }
+.rep-chat-modal {
+  background: #fff; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  height: 78vh; max-height: 600px;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+  animation: slideUp 0.22s ease;
+}
+@keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.rep-chat-header {
+  padding: 14px 18px 12px; border-bottom: 1.5px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.rep-chat-header-info { flex: 1; min-width: 0; }
+.rep-chat-header-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+.rep-chat-header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.btn-rep-chat-close {
+  background: var(--cream2); border: none; border-radius: 50%;
+  width: 32px; height: 32px; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); flex-shrink: 0;
+}
+.rep-chat-order-select {
+  padding: 8px 14px; border-bottom: 1.5px solid var(--border); flex-shrink: 0;
+}
+.rep-chat-order-select select {
+  width: 100%; padding: 8px 10px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 13px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+}
+.rep-chat-order-select select:focus { border-color: var(--blue); }
+.rep-chat-messages {
+  flex: 1; overflow-y: auto; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth;
+}
+.rep-chat-msg {
+  max-width: 80%; padding: 9px 13px; border-radius: 14px;
+  font-size: 13px; line-height: 1.45; word-break: break-word;
+}
+.rep-chat-msg.from-rep {
+  background: var(--blue); color: #fff;
+  border-bottom-right-radius: 4px; align-self: flex-end;
+}
+.rep-chat-msg.from-client {
+  background: var(--cream2); color: var(--text);
+  border-bottom-left-radius: 4px; align-self: flex-start;
+}
+.rep-chat-msg.from-admin {
+  background: var(--navy); color: #fff;
+  border-bottom-left-radius: 4px; align-self: flex-start;
+  opacity: 0.7;
+}
+.rep-chat-msg-time { font-size: 10px; margin-top: 3px; opacity: 0.6; }
+.rep-chat-empty { text-align: center; padding: 30px 16px; color: var(--muted); font-size: 13px; }
+.rep-chat-input-bar {
+  padding: 10px 14px 12px; border-top: 1.5px solid var(--border);
+  display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+}
+.rep-chat-input-bar textarea {
+  flex: 1; padding: 10px 13px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 13px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+  resize: none; max-height: 100px; line-height: 1.4; transition: border-color 0.2s;
+}
+.rep-chat-input-bar textarea:focus { border-color: var(--blue); background: #fff; }
+.btn-rep-chat-send {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--blue); color: #fff; border: none;
+  font-size: 18px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  align-self: flex-end; font-family: inherit;
+}
+.btn-rep-chat-send:hover { background: #155a9a; }
+.btn-rep-chat-send:disabled { background: #ccc; cursor: not-allowed; }
+.rep-chat-order-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 12px; border: none; border-radius: 8px;
+  background: var(--blue); color: #fff; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; margin-top: 8px;
+  transition: background 0.15s;
+}
+.rep-chat-order-btn:hover { background: #155a9a; }
+.rep-chat-unread-dot {
+  width: 8px; height: 8px; background: var(--red);
+  border-radius: 50%; display: inline-block;
+}
 </style>
 </head>
 <body>
@@ -1139,7 +1252,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div class="chat-header">
       <div style="font-size:22px">💬</div>
       <div class="chat-header-info">
-        <div class="chat-header-title">Chat con el vendedor</div>
+        <div class="chat-header-title" id="chat-modal-title">Chat con el vendedor</div>
         <div class="chat-header-sub" id="chat-modal-sub">Pedido activo</div>
       </div>
       <button class="btn-admin-close-chat" onclick="clientCloseChat()" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 6px;white-space:nowrap">🔒 Cerrar chat</button>
@@ -1486,6 +1599,39 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
 
       <div id="rep-orders-container"></div>
+    </div>
+  </div>
+
+  <!-- CHAT FAB (repartidor) -->
+  <button class="rep-chat-fab" id="rep-chat-fab" onclick="repOpenChat()">
+    &#x1F4AC;
+    <span class="rep-chat-badge" id="rep-chat-badge">0</span>
+  </button>
+
+  <!-- CHAT MODAL (repartidor) -->
+  <div class="rep-chat-modal-overlay" id="rep-chat-overlay" onclick="repHandleChatOverlay(event)">
+    <div class="rep-chat-modal">
+      <div class="rep-chat-header">
+        <div style="font-size:22px">&#x1F4AC;</div>
+        <div class="rep-chat-header-info">
+          <div class="rep-chat-header-title">Chat con el cliente</div>
+          <div class="rep-chat-header-sub" id="rep-chat-sub">Seleccioná un pedido</div>
+        </div>
+        <button class="btn-rep-chat-close" onclick="repCloseChat()">&#x2715;</button>
+      </div>
+      <div class="rep-chat-order-select">
+        <select id="rep-chat-order-select" onchange="repSelectChatOrder(this.value)">
+          <option value="">— Elegí un pedido en camino —</option>
+        </select>
+      </div>
+      <div class="rep-chat-messages" id="rep-chat-messages">
+        <div class="rep-chat-empty">Seleccioná un pedido para ver el chat</div>
+      </div>
+      <div class="rep-chat-input-bar" id="rep-chat-input-bar">
+        <textarea id="rep-chat-input" placeholder="Escribí un mensaje al cliente..." rows="1"
+          onkeydown="repHandleChatKey(event)" oninput="repAutoResizeChat(this)"></textarea>
+        <button class="btn-rep-chat-send" id="btn-rep-chat-send" onclick="repSendMessage()">&#x27A4;</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2940,7 +3086,7 @@ function desactivarModoEncargo() {
 // CREATE TABLE IF NOT EXISTS chipas_chats (
 //   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
 //   order_id text NOT NULL,
-//   sender text NOT NULL CHECK (sender IN ('client','admin')),
+//   sender text NOT NULL CHECK (sender IN ('client','admin','repartidor')),
 //   message text NOT NULL,
 //   created_at timestamptz DEFAULT now()
 // );
@@ -3040,11 +3186,12 @@ function renderClientChatMessages() {
     el.innerHTML = '<div class="chat-empty">👋 Escribinos si tenés alguna duda sobre tu pedido</div>';
   } else {
     el.innerHTML = chatMessages.map(m => {
-      const isAdmin = m.sender === 'admin';
+      const isFromUs = m.sender === 'admin' || m.sender === 'repartidor';
       const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
-      return `<div class="chat-msg ${isAdmin ? 'from-admin' : 'from-client'}">
+      const label = m.sender === 'repartidor' ? '🛵 Repartidor · ' : m.sender === 'admin' ? '🛍 Vendedor · ' : '';
+      return `<div class="chat-msg ${isFromUs ? 'from-admin' : 'from-client'}">
         ${escapeHtml(m.message)}
-        <div class="chat-msg-time">${isAdmin ? '🛍 Vendedor · ' : ''}${time}</div>
+        <div class="chat-msg-time">${label}${time}</div>
       </div>`;
     }).join('');
     el.scrollTop = el.scrollHeight;
@@ -3076,13 +3223,14 @@ function subscribeClientChat() {
         chatMessages.push(payload.new);
         if (document.getElementById('chat-modal-overlay').classList.contains('open')) {
           renderClientChatMessages();
-        } else if (payload.new.sender === 'admin') {
+        } else if (payload.new.sender === 'admin' || payload.new.sender === 'repartidor') {
           const badge = document.getElementById('chat-fab-badge');
           const current = parseInt(badge.textContent || '0') + 1;
           badge.textContent = current;
           badge.classList.add('show');
-          showToast('💬 Nuevo mensaje del vendedor');
-          sendBrowserNotification('💬 Mensaje del vendedor', payload.new.message.substring(0, 60), 'chat-admin-' + myOrderId);
+          const senderLabel = payload.new.sender === 'repartidor' ? 'repartidor' : 'vendedor';
+          showToast(`💬 Nuevo mensaje del ${senderLabel}`);
+          sendBrowserNotification(`💬 Mensaje del ${senderLabel}`, payload.new.message.substring(0, 60), 'chat-admin-' + myOrderId);
         }
       }
     })
@@ -3135,9 +3283,23 @@ async function sendClientMessage() {
 }
 
 // Called from updateStatusTracker when order changes
+let chatOrderStatus = 'pendiente'; // track current order status for sender routing
+
 function updateChatFab(order) {
   const fab = document.getElementById('chat-fab');
   if (!fab) return;
+  chatOrderStatus = order.status;
+
+  // Update chat modal title based on who the client is talking to
+  const titleEl = document.getElementById('chat-modal-title');
+  if (titleEl) {
+    if (['en_camino', 'entregado'].includes(order.status)) {
+      titleEl.textContent = '🛵 Chat con el repartidor';
+    } else {
+      titleEl.textContent = '💬 Chat con el vendedor';
+    }
+  }
+
   // Chat activates only when accepted (status 'aceptado' or later), and stays visible until closed
   const chatEligible = ['aceptado','en_camino','entregado'].includes(order.status);
   if (chatEligible && !order.chat_closed) {
@@ -3199,10 +3361,13 @@ function renderAdminChatMessages(orderId, messages, isClosed, closedBy) {
   } else {
     el.innerHTML = messages.map(m => {
       const isAdmin = m.sender === 'admin';
+      const isRep = m.sender === 'repartidor';
+      const isFromUs = isAdmin || isRep;
       const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
-      return `<div class="chat-msg ${isAdmin ? 'from-admin' : 'from-client'}" style="max-width:90%">
+      const label = isRep ? '🛵 Repartidor · ' : isAdmin ? '🛍 Vos · ' : '👤 Cliente · ';
+      return `<div class="chat-msg ${isFromUs ? 'from-admin' : 'from-client'}" style="max-width:90%">
         ${escapeHtml(m.message)}
-        <div class="chat-msg-time">${isAdmin ? '🛍 Vos · ' : '👤 Cliente · '}${time}</div>
+        <div class="chat-msg-time">${label}${time}</div>
       </div>`;
     }).join('');
     el.scrollTop = el.scrollHeight;
@@ -3290,12 +3455,15 @@ async function adminCloseChat(orderId) {
 async function initAdminChatListeners() {
   db.channel('chat-admin-global')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats' }, (payload) => {
-      if (!payload.new || payload.new.sender !== 'client') return;
+      if (!payload.new) return;
+      // Admin sees new client AND repartidor messages
+      if (payload.new.sender !== 'client' && payload.new.sender !== 'repartidor') return;
       const orderId = payload.new.order_id;
       if (!adminOpenChats.has(orderId)) {
         adminUnreadChats[orderId] = (adminUnreadChats[orderId] || 0) + 1;
         playNotificationSound();
-        sendBrowserNotification('💬 Mensaje de cliente', payload.new.message.substring(0,60), 'chat-' + orderId);
+        const senderLabel = payload.new.sender === 'repartidor' ? 'Repartidor' : 'Cliente';
+        sendBrowserNotification(`💬 Mensaje de ${senderLabel}`, payload.new.message.substring(0,60), 'chat-' + orderId);
         renderAdminOrders();
       }
     })
@@ -3640,13 +3808,6 @@ async function saveRepPin() {
   }
 }
 
-// START
-if (!isRepartidor) {
-  init();
-} else {
-  repInit();
-}
-
 // ============================================================
 // ===== REPARTIDOR LOGIC =====================================
 // ============================================================
@@ -3656,6 +3817,11 @@ let repSortOrder = [];
 let repViewMode = 'orden';
 let repDragSrcIdx = null;
 let repSubscription = null;
+let repChatUnread = {}; // orderId -> unread count
+let repChatCurrentOrderId = null;
+let repChatMessages = [];
+let repChatChannel = null;
+let repChatGlobalChannel = null;
 
 const REP_PIN_STORAGE_KEY = 'chipas_rep_unlocked';
 
@@ -3667,10 +3833,16 @@ function repHideLoader() {
 }
 
 async function repInit() {
-  const unlocked = sessionStorage.getItem(REP_PIN_STORAGE_KEY);
-  if (unlocked === '1') {
-    repShowMain();
-  } else {
+  try {
+    const unlocked = sessionStorage.getItem(REP_PIN_STORAGE_KEY);
+    if (unlocked === '1') {
+      repShowMain();
+    } else {
+      repHideLoader();
+      document.getElementById('view-rep-login').style.display = 'flex';
+    }
+  } catch(e) {
+    console.error('repInit error:', e);
     repHideLoader();
     document.getElementById('view-rep-login').style.display = 'flex';
   }
@@ -3706,8 +3878,14 @@ async function repShowMain() {
   document.getElementById('view-rep-login').style.display = 'none';
   document.getElementById('view-rep-main').style.display = 'block';
   repHideLoader();
-  await repLoadOrders();
-  repSubscribeRealtime();
+  try {
+    await repLoadOrders();
+    repSubscribeRealtime();
+    repInitGlobalChatListener();
+  } catch(e) {
+    console.error('repShowMain error:', e);
+    showToast('Error al cargar pedidos');
+  }
 }
 
 async function repLoadOrders() {
@@ -3782,9 +3960,8 @@ function repRender() {
   } else {
     repRenderByOrder(sorted, container);
   }
-}
-
-function repRenderByOrder(sorted, container) {
+  repUpdateChatFab();
+}(sorted, container) {
   container.innerHTML = '';
   sorted.forEach((order, idx) => container.appendChild(repBuildCard(order, idx, true)));
   repInitDragDrop();
@@ -3831,10 +4008,12 @@ function repBuildCard(order, position, showDrag) {
       <button class="rep-btn-action rep-btn-whatsapp" onclick="repOpenWhatsApp('${repEsc(order.cel)}','${repEsc(order.nombre)}')">&#x1F4AC; WhatsApp</button>
       <button class="rep-btn-action rep-btn-maps" onclick="repOpenMaps('${repEsc(order.calle)} ${repEsc(order.altura)}, ${repEsc(order.localidad||'')}')">&#x1F4CD; Maps</button>`;
   } else if (order.status === 'en_camino') {
+    const unread = repChatUnread[order.id] ? `<span class="rep-chat-unread-dot"></span>` : '';
     actions = `
       <button class="rep-btn-action rep-btn-deliver" onclick="repMarkEntregado('${order.id}')">&#x2705; Marcar entregado</button>
       <button class="rep-btn-action rep-btn-whatsapp" onclick="repOpenWhatsApp('${repEsc(order.cel)}','${repEsc(order.nombre)}')">&#x1F4AC; WhatsApp</button>
-      <button class="rep-btn-action rep-btn-maps" onclick="repOpenMaps('${repEsc(order.calle)} ${repEsc(order.altura)}, ${repEsc(order.localidad||'')}')">&#x1F4CD; Maps</button>`;
+      <button class="rep-btn-action rep-btn-maps" onclick="repOpenMaps('${repEsc(order.calle)} ${repEsc(order.altura)}, ${repEsc(order.localidad||'')}')">&#x1F4CD; Maps</button>
+      <button class="rep-chat-order-btn" onclick="repOpenChatForOrder('${order.id}','${repEsc(order.nombre)}')">&#x1F4AC; Chat${unread}</button>`;
   } else if (order.status === 'entregado') {
     actions = `<div class="rep-delivered-check">&#x2705; Entregado</div>`;
   }
@@ -3988,6 +4167,205 @@ function repReorder(fromIdx, toIdx) {
   repSaveSortOrder();
   repRender();
   showToast('Orden actualizado');
+}
+
+// ── CHAT (repartidor) ─────────────────────────────────────────────────────
+
+function repUpdateChatFab() {
+  const fab = document.getElementById('rep-chat-fab');
+  if (!fab) return;
+  const enCaminoOrders = repGetSortedOrders().filter(o => o.status === 'en_camino');
+  if (enCaminoOrders.length > 0) {
+    fab.style.display = 'flex';
+    // Update select options
+    repUpdateChatOrderSelect();
+  } else {
+    fab.style.display = 'none';
+    // Close modal if open and no en_camino orders
+    document.getElementById('rep-chat-overlay').classList.remove('open');
+  }
+  // Update total unread badge
+  const total = Object.values(repChatUnread).reduce((a, b) => a + b, 0);
+  const badge = document.getElementById('rep-chat-badge');
+  if (badge) {
+    badge.textContent = total;
+    badge.classList.toggle('show', total > 0);
+  }
+}
+
+function repUpdateChatOrderSelect() {
+  const sel = document.getElementById('rep-chat-order-select');
+  if (!sel) return;
+  const enCaminoOrders = repGetSortedOrders().filter(o => o.status === 'en_camino');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Elegí un pedido en camino —</option>' +
+    enCaminoOrders.map(o => {
+      const unread = repChatUnread[o.id] ? ` (${repChatUnread[o.id]} sin leer)` : '';
+      return `<option value="${o.id}">${repEsc(o.nombre)} — ${repEsc(o.localidad || 'sin localidad')}${unread}</option>`;
+    }).join('');
+  // Restore selection if still valid
+  if (currentVal && enCaminoOrders.find(o => o.id === currentVal)) {
+    sel.value = currentVal;
+  } else if (enCaminoOrders.length === 1) {
+    sel.value = enCaminoOrders[0].id;
+    repSelectChatOrder(enCaminoOrders[0].id);
+  }
+}
+
+function repOpenChat() {
+  document.getElementById('rep-chat-overlay').classList.add('open');
+  repUpdateChatOrderSelect();
+  // Clear all unread badge
+  const badge = document.getElementById('rep-chat-badge');
+  if (badge) { badge.textContent = '0'; badge.classList.remove('show'); }
+  // Auto-select if only one en_camino order
+  const enCaminoOrders = repGetSortedOrders().filter(o => o.status === 'en_camino');
+  if (enCaminoOrders.length === 1 && !repChatCurrentOrderId) {
+    document.getElementById('rep-chat-order-select').value = enCaminoOrders[0].id;
+    repSelectChatOrder(enCaminoOrders[0].id);
+  } else if (repChatCurrentOrderId) {
+    repLoadChatMessages(repChatCurrentOrderId);
+  }
+}
+
+function repOpenChatForOrder(orderId, nombre) {
+  document.getElementById('rep-chat-overlay').classList.add('open');
+  repUpdateChatOrderSelect();
+  document.getElementById('rep-chat-order-select').value = orderId;
+  repSelectChatOrder(orderId);
+  if (repChatUnread[orderId]) {
+    repChatUnread[orderId] = 0;
+    repRender();
+    repUpdateChatFab();
+  }
+}
+
+function repCloseChat() {
+  document.getElementById('rep-chat-overlay').classList.remove('open');
+}
+
+function repHandleChatOverlay(e) {
+  if (e.target === document.getElementById('rep-chat-overlay')) repCloseChat();
+}
+
+function repHandleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); repSendMessage(); }
+}
+
+function repAutoResizeChat(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+async function repSelectChatOrder(orderId) {
+  repChatCurrentOrderId = orderId || null;
+  const sub = document.getElementById('rep-chat-sub');
+  if (!orderId) {
+    if (sub) sub.textContent = 'Seleccioná un pedido';
+    document.getElementById('rep-chat-messages').innerHTML = '<div class="rep-chat-empty">Seleccioná un pedido para ver el chat</div>';
+    document.getElementById('rep-chat-input-bar').style.display = 'none';
+    return;
+  }
+  const order = repOrders.find(o => o.id === orderId);
+  if (sub && order) sub.textContent = `${order.nombre} · ${order.calle} ${order.altura}`;
+  document.getElementById('rep-chat-input-bar').style.display = 'flex';
+  // Clear unread for this order
+  repChatUnread[orderId] = 0;
+  repUpdateChatFab();
+  await repLoadChatMessages(orderId);
+  repSubscribeChatForOrder(orderId);
+}
+
+async function repLoadChatMessages(orderId) {
+  const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
+  repChatMessages = data || [];
+  repRenderChatMessages();
+}
+
+function repRenderChatMessages() {
+  const el = document.getElementById('rep-chat-messages');
+  if (!el) return;
+  if (!repChatMessages.length) {
+    el.innerHTML = '<div class="rep-chat-empty">&#x1F44B; Sin mensajes aún. El cliente puede escribirte acá.</div>';
+    return;
+  }
+  el.innerHTML = repChatMessages.map(m => {
+    const isRep = m.sender === 'repartidor';
+    const isAdmin = m.sender === 'admin';
+    const isClient = m.sender === 'client';
+    let cls = isRep ? 'from-rep' : isAdmin ? 'from-admin' : 'from-client';
+    const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+    const label = isRep ? 'Vos · ' : isAdmin ? '&#x1F6CD; Vendedor · ' : '&#x1F464; Cliente · ';
+    return `<div class="rep-chat-msg ${cls}">
+      ${repEsc(m.message)}
+      <div class="rep-chat-msg-time">${label}${time}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function repSubscribeChatForOrder(orderId) {
+  // Only subscribe once per order per session
+  if (repChatChannel && repChatChannel._topic && repChatChannel._topic.includes(orderId)) return;
+  if (repChatChannel) repChatChannel.unsubscribe();
+  repChatChannel = db.channel('rep-chat-' + orderId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats',
+        filter: 'order_id=eq.' + orderId }, (payload) => {
+      if (!payload.new) return;
+      repChatMessages.push(payload.new);
+      if (document.getElementById('rep-chat-overlay').classList.contains('open') && repChatCurrentOrderId === orderId) {
+        repRenderChatMessages();
+      } else if (payload.new.sender === 'client') {
+        repChatUnread[orderId] = (repChatUnread[orderId] || 0) + 1;
+        repUpdateChatFab();
+        repRender(); // refresh card badge
+        showToast('&#x1F4AC; Mensaje del cliente: ' + payload.new.message.substring(0, 40));
+      }
+    })
+    .subscribe();
+}
+
+function repInitGlobalChatListener() {
+  if (repChatGlobalChannel) return;
+  repChatGlobalChannel = db.channel('rep-chat-global')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats' }, (payload) => {
+      if (!payload.new || payload.new.sender !== 'client') return;
+      const orderId = payload.new.order_id;
+      const order = repOrders.find(o => o.id === orderId && o.status === 'en_camino');
+      if (!order) return;
+      if (repChatCurrentOrderId !== orderId || !document.getElementById('rep-chat-overlay').classList.contains('open')) {
+        repChatUnread[orderId] = (repChatUnread[orderId] || 0) + 1;
+        repUpdateChatFab();
+        repRender();
+        showToast('&#x1F4AC; Mensaje del cliente: ' + payload.new.message.substring(0, 40));
+      }
+    })
+    .subscribe();
+}
+
+async function repSendMessage() {
+  if (!repChatCurrentOrderId) { showToast('Seleccioná un pedido primero'); return; }
+  const input = document.getElementById('rep-chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('btn-rep-chat-send');
+  btn.disabled = true;
+  const { error } = await db.from('chipas_chats').insert({
+    order_id: repChatCurrentOrderId,
+    sender: 'repartidor',
+    message: msg,
+    created_at: new Date().toISOString()
+  });
+  if (!error) { input.value = ''; input.style.height = 'auto'; }
+  btn.disabled = false;
+  if (error) showToast('Error al enviar');
+}
+
+// ===== START (after all declarations) =====
+if (!isRepartidor) {
+  init();
+} else {
+  repInit();
 }
 </script>
 </body>
