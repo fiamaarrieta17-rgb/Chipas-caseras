@@ -319,6 +319,10 @@ button, input, textarea { font-family: inherit; }
 .closed-banner p { font-size: 13px; opacity: 0.75; }
 .store-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--cream2); border-radius: 12px; margin-bottom: 8px; }
 .store-toggle span { font-size: 14px; font-weight: 600; color: var(--navy); }
+.store-mode-group { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.store-mode-btn { flex: 1; min-width: 96px; padding: 10px 6px; border: 1.5px solid var(--border); border-radius: 10px; background: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; color: var(--muted); transition: all 0.15s; text-align: center; }
+.store-mode-btn:hover { border-color: var(--gold); }
+.store-mode-btn.active { border-color: var(--gold); background: var(--gold); color: #fff; }
 .toggle-switch { position: relative; width: 44px; height: 24px; }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
 .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 24px; transition: 0.2s; }
@@ -947,13 +951,14 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <!-- HORARIO -->
         <div class="config-card" style="max-width:480px">
           <h2>🕐 Horario de atención</h2>
-          <div class="config-intro">Fuera de este horario los clientes ven un cartel de cerrado y no pueden hacer pedidos.</div>
+          <div class="config-intro">"Automático" abre y cierra solo según el horario. Las opciones de forzado pisan el horario hasta que las cambies de nuevo.</div>
+          <div class="store-mode-group" id="store-mode-group">
+            <button type="button" class="store-mode-btn" data-mode="auto" onclick="setStoreMode('auto')">🤖 Automático</button>
+            <button type="button" class="store-mode-btn" data-mode="forzar_abierto" onclick="setStoreMode('forzar_abierto')">🟢 Forzar abierto</button>
+            <button type="button" class="store-mode-btn" data-mode="forzar_cerrado" onclick="setStoreMode('forzar_cerrado')">🔴 Forzar cerrado</button>
+          </div>
           <div class="store-toggle">
             <span id="store-status-label">🟢 Tienda abierta</span>
-            <label class="toggle-switch">
-              <input type="checkbox" id="cfg-tienda-abierta" onchange="toggleTienda(this)" />
-              <span class="toggle-slider"></span>
-            </label>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -1212,7 +1217,8 @@ const DEFAULT_SETTINGS = {
   delivery_fee: 1000,
   horario_apertura: '09:00',
   horario_cierre: '21:00',
-  tienda_cerrada: false
+  tienda_cerrada: false,
+  modo_tienda: 'auto' // 'auto' | 'forzar_abierto' | 'forzar_cerrado'
 };
 let settings = { ...DEFAULT_SETTINGS };
 let deliveryMethod = null; // 'retiro' | 'domicilio'
@@ -1317,9 +1323,24 @@ function renderConfigPanel() {
   document.getElementById('cfg-delivery-fee').value = settings.delivery_fee ?? 1000;
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
-  document.getElementById('cfg-tienda-abierta').checked = !settings.tienda_cerrada;
-  document.getElementById('store-status-label').textContent = settings.tienda_cerrada ? '🔴 Tienda cerrada manualmente' : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
+  renderStoreModeUI();
   previewConfig();
+}
+function getStoreMode() {
+  // Compatibilidad con datos viejos que solo tenían tienda_cerrada (sin modo_tienda)
+  if (settings.modo_tienda) return settings.modo_tienda;
+  return settings.tienda_cerrada ? 'forzar_cerrado' : 'auto';
+}
+function renderStoreModeUI() {
+  const mode = getStoreMode();
+  document.querySelectorAll('.store-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  const label = document.getElementById('store-status-label');
+  if (!label) return;
+  if (mode === 'forzar_abierto') label.textContent = '🟢 Tienda abierta (forzado, ignora el horario)';
+  else if (mode === 'forzar_cerrado') label.textContent = '🔴 Tienda cerrada (forzado, ignora el horario)';
+  else label.textContent = isStoreOpenNow() ? '🟢 Tienda abierta (según horario)' : '🟡 Cerrada (fuera de horario)';
 }
 function previewDeliveryFee() {
   // Just a no-op hook in case we want live feedback later; value is read on save.
@@ -1335,7 +1356,8 @@ async function saveSettings() {
     delivery_fee: parseInt(document.getElementById('cfg-delivery-fee').value, 10) || 0,
     horario_apertura: document.getElementById('cfg-horario-apertura').value || '09:00',
     horario_cierre: document.getElementById('cfg-horario-cierre').value || '21:00',
-    tienda_cerrada: !document.getElementById('cfg-tienda-abierta').checked
+    modo_tienda: getStoreMode(),
+    tienda_cerrada: getStoreMode() === 'forzar_cerrado'
   };
   settings = { ...settings, ...newSettings };
   saveLocalSettings();
@@ -1483,18 +1505,27 @@ function isStoreOpenNow() {
   return nowMin >= abrMin && nowMin < cieMin;
 }
 
+// Resultado final: combina el modo elegido con el horario configurado
+function isStoreOpenEffective() {
+  const mode = getStoreMode();
+  if (mode === 'forzar_abierto') return true;
+  if (mode === 'forzar_cerrado') return false;
+  return isStoreOpenNow(); // 'auto'
+}
+
 function checkStoreClosed() {
   if (isAdmin) return;
   const banner = document.getElementById('closed-banner');
   const form = document.getElementById('order-form-card');
   const cart = document.getElementById('cart-summary');
   const submitBtn = document.getElementById('btn-submit');
-  const isClosed = settings.tienda_cerrada || !isStoreOpenNow();
+  const mode = getStoreMode();
+  const isClosed = !isStoreOpenEffective();
   if (banner) {
     banner.style.display = isClosed ? 'block' : 'none';
     const [aH, aM] = (settings.horario_apertura || '09:00').split(':').map(Number);
     const [cH, cM] = (settings.horario_cierre || '21:00').split(':').map(Number);
-    document.getElementById('closed-banner-text').textContent = settings.tienda_cerrada
+    document.getElementById('closed-banner-text').textContent = mode === 'forzar_cerrado'
       ? 'Volvemos pronto. ¡Gracias por tu paciencia!'
       : `Nuestro horario es de ${String(aH).padStart(2,'0')}:${String(aM).padStart(2,'0')} a ${String(cH).padStart(2,'0')}:${String(cM).padStart(2,'0')} hs.`;
   }
@@ -1503,43 +1534,33 @@ function checkStoreClosed() {
   if (submitBtn) submitBtn.disabled = isClosed;
 }
 
-async function toggleTienda(el) {
-  const nuevoEstado = !el.checked;
-  settings.tienda_cerrada = nuevoEstado;
-  document.getElementById('store-status-label').textContent = settings.tienda_cerrada
-    ? '🔴 Tienda cerrada manualmente'
-    : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
+async function setStoreMode(mode) {
+  const prevMode = getStoreMode();
+  if (prevMode === mode) return;
+  settings.modo_tienda = mode;
+  settings.tienda_cerrada = (mode === 'forzar_cerrado');
+  renderStoreModeUI();
   saveLocalSettings();
   try {
-    const { error } = await db.from('chipas_settings').upsert({ id: 'main', tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString() });
+    const { error } = await db.from('chipas_settings').upsert({
+      id: 'main', modo_tienda: mode, tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString()
+    });
     if (error) throw error;
   } catch(e) {
-    // No se pudo guardar en Supabase: revertimos el switch y avisamos con el error real
-    settings.tienda_cerrada = !nuevoEstado;
-    el.checked = !el.checked;
+    // No se pudo guardar en Supabase: revertimos y avisamos con el error real
+    settings.modo_tienda = prevMode;
+    settings.tienda_cerrada = (prevMode === 'forzar_cerrado');
     saveLocalSettings();
-    document.getElementById('store-status-label').textContent = settings.tienda_cerrada
-      ? '🔴 Tienda cerrada manualmente'
-      : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
-    showToast('❌ No se pudo guardar: ' + (e?.message || 'revisá la tabla chipas_settings en Supabase'));
+    renderStoreModeUI();
+    showToast('❌ No se pudo guardar: ' + (e?.message || 'revisá que la tabla chipas_settings tenga la columna modo_tienda'));
     return;
   }
-  showToast(settings.tienda_cerrada ? '🔴 Tienda cerrada' : '🟢 Tienda abierta');
-  // Actualizar banner para clientes en esta misma sesión (si admin abre en otra pestaña)
-  const banner = document.getElementById('closed-banner');
-  const form = document.getElementById('order-form-card');
-  const cart = document.getElementById('cart-summary');
-  const submitBtn = document.getElementById('btn-submit');
-  const isClosed = settings.tienda_cerrada || !isStoreOpenNow();
-  if (banner) {
-    banner.style.display = isClosed ? 'block' : 'none';
-    document.getElementById('closed-banner-text').textContent = settings.tienda_cerrada
-      ? 'Volvemos pronto. ¡Gracias por tu paciencia!'
-      : (() => { const [aH,aM]=(settings.horario_apertura||'09:00').split(':').map(Number); const [cH,cM]=(settings.horario_cierre||'21:00').split(':').map(Number); return `Nuestro horario es de ${String(aH).padStart(2,'0')}:${String(aM).padStart(2,'0')} a ${String(cH).padStart(2,'0')}:${String(cM).padStart(2,'0')} hs.`; })();
-  }
-  if (form) form.style.display = isClosed ? 'none' : 'block';
-  if (cart) cart.style.display = isClosed ? 'none' : (cart.classList.contains('visible') ? 'block' : 'none');
-  if (submitBtn) submitBtn.disabled = isClosed;
+  const msg = mode === 'forzar_abierto' ? '🟢 Tienda forzada a abierta'
+    : mode === 'forzar_cerrado' ? '🔴 Tienda forzada a cerrada'
+    : '🤖 Tienda en modo automático (según horario)';
+  showToast(msg);
+  // Actualizar banner para clientes en esta misma sesión (si el admin tiene otra pestaña abierta)
+  checkStoreClosed();
 }
 
 // ===== INIT =====
