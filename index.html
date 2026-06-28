@@ -62,6 +62,162 @@ button, input, textarea { font-family: inherit; }
 .historial-table td:first-child { color: var(--muted); font-size: 12px; }
 .historial-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
 
+/* ===== CHAT ===== */
+#chat-fab {
+  position: fixed; bottom: 24px; right: 20px; z-index: 500;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--gold); color: #fff; border: none;
+  font-size: 24px; cursor: pointer; display: none;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(201,147,58,0.45);
+  transition: transform 0.18s, background 0.18s;
+}
+#chat-fab:hover { background: #b8832e; transform: scale(1.07); }
+#chat-fab .chat-badge {
+  position: absolute; top: -4px; right: -4px;
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+#chat-fab .chat-badge.show { display: flex; }
+
+.chat-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 600; display: none; align-items: flex-end; justify-content: center;
+  padding-bottom: 0;
+}
+.chat-modal-overlay.open { display: flex; }
+
+.chat-modal {
+  background: #fff; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  height: 78vh; max-height: 600px;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+  animation: slideUp 0.22s ease;
+}
+@keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.chat-header {
+  padding: 14px 18px 12px;
+  border-bottom: 1.5px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.chat-header-info { flex: 1; min-width: 0; }
+.chat-header-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+.chat-header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn-chat-close {
+  background: var(--cream2); border: none; border-radius: 50%;
+  width: 32px; height: 32px; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); flex-shrink: 0; transition: background 0.15s;
+}
+.btn-chat-close:hover { background: var(--border); }
+
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  scroll-behavior: smooth;
+}
+.chat-msg {
+  max-width: 80%; padding: 9px 13px; border-radius: 14px;
+  font-size: 13px; line-height: 1.45; word-break: break-word;
+}
+.chat-msg.from-admin {
+  background: var(--navy); color: #fff;
+  border-bottom-left-radius: 4px; align-self: flex-start;
+}
+.chat-msg.from-client {
+  background: var(--cream2); color: var(--text);
+  border-bottom-right-radius: 4px; align-self: flex-end;
+}
+.chat-msg-time { font-size: 10px; margin-top: 3px; opacity: 0.6; }
+.chat-msg.from-admin .chat-msg-time { color: rgba(255,255,255,0.6); }
+.chat-empty { text-align: center; padding: 30px 16px; color: var(--muted); font-size: 13px; }
+
+.chat-input-bar {
+  padding: 10px 14px 12px; border-top: 1.5px solid var(--border);
+  display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+}
+.chat-input-bar textarea {
+  flex: 1; padding: 10px 13px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 13px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+  resize: none; max-height: 100px; line-height: 1.4;
+  transition: border-color 0.2s;
+}
+.chat-input-bar textarea:focus { border-color: var(--gold); background: #fff; }
+.btn-chat-send {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--gold); color: #fff; border: none;
+  font-size: 18px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+  align-self: flex-end;
+}
+.btn-chat-send:hover { background: #b8832e; }
+.btn-chat-send:active { transform: scale(0.92); }
+.btn-chat-send:disabled { background: #ccc; cursor: not-allowed; }
+
+.chat-closed-notice {
+  background: var(--cream2); border-radius: 10px;
+  padding: 10px 14px; text-align: center;
+  font-size: 12px; color: var(--muted); margin: 8px 14px;
+  flex-shrink: 0;
+}
+
+/* Admin inline chat button */
+.btn-chat-order {
+  background: var(--navy); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 12px; font-size: 12px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  transition: background 0.15s;
+}
+.btn-chat-order:hover { background: var(--gold); }
+.chat-unread-dot {
+  width: 8px; height: 8px; background: var(--red);
+  border-radius: 50%; display: inline-block;
+}
+
+/* Admin chat panel (inside order card) */
+.admin-chat-panel {
+  margin-top: 12px; border: 1.5px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+  display: none;
+}
+.admin-chat-panel.open { display: block; }
+.admin-chat-msgs {
+  padding: 10px 12px; background: var(--cream);
+  max-height: 220px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px;
+  scroll-behavior: smooth;
+}
+.admin-chat-input {
+  display: flex; gap: 6px; padding: 8px 10px;
+  border-top: 1.5px solid var(--border); background: #fff;
+  align-items: flex-end;
+}
+.admin-chat-input textarea {
+  flex: 1; padding: 8px 10px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 12px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+  resize: none; max-height: 80px; line-height: 1.4;
+  transition: border-color 0.2s;
+}
+.admin-chat-input textarea:focus { border-color: var(--gold); background: #fff; }
+.admin-chat-footer {
+  display: flex; gap: 6px; padding: 0 10px 8px; background: #fff; align-items: center;
+}
+.btn-admin-close-chat {
+  font-size: 11px; color: var(--red); background: none; border: none;
+  cursor: pointer; font-family: inherit; font-weight: 600; padding: 4px 0;
+}
+.btn-admin-close-chat:hover { text-decoration: underline; }
+
 /* ===== LOADING ===== */
 #loading-screen {
   position: fixed; inset: 0;
@@ -639,6 +795,35 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div id="post-order-actions" style="display:none">
       <button class="edit-btn" onclick="editOrder()">✏️ Modificar mi pedido</button>
       <button class="cancel-btn" onclick="cancelOrder()">✕ Cancelar pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT FAB (cliente) -->
+<button id="chat-fab" onclick="openClientChat()" title="Chat con el vendedor">
+  💬
+  <span class="chat-badge" id="chat-fab-badge">0</span>
+</button>
+
+<!-- CHAT MODAL (cliente) -->
+<div class="chat-modal-overlay" id="chat-modal-overlay" onclick="handleChatOverlayClick(event)">
+  <div class="chat-modal">
+    <div class="chat-header">
+      <div style="font-size:22px">💬</div>
+      <div class="chat-header-info">
+        <div class="chat-header-title">Chat con el vendedor</div>
+        <div class="chat-header-sub" id="chat-modal-sub">Pedido activo</div>
+      </div>
+      <button class="btn-chat-close" onclick="closeClientChat()">✕</button>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div id="chat-closed-notice" class="chat-closed-notice" style="display:none">
+      🔒 Este chat fue cerrado por el vendedor
+    </div>
+    <div class="chat-input-bar" id="chat-input-bar">
+      <textarea id="chat-input" placeholder="Escribí tu consulta..." rows="1"
+        onkeydown="handleChatKey(event)" oninput="autoResizeChat(this)"></textarea>
+      <button class="btn-chat-send" id="btn-chat-send" onclick="sendClientMessage()">➤</button>
     </div>
   </div>
 </div>
@@ -1383,7 +1568,7 @@ function initCliente() {
   renderProducts();
   checkStoreClosed();
   setInterval(checkStoreClosed, 60000); // re-chequear cada minuto
-  if (myOrderId) checkMyOrder();
+  if (myOrderId) { checkMyOrder(); subscribeClientChat(); }
 
   db.channel('my-order')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chipas_orders' }, (payload) => {
@@ -1717,12 +1902,21 @@ function updateStatusTracker(order) {
   if (order.status === 'entregado') {
     arrivedBanner.style.display = 'block';
     setTimeout(() => arrivedBanner.style.display = 'none', 8000);
+    // Cerrar chat 1hr después de entregado
+    setTimeout(() => {
+      if (myOrderId === order.id) {
+        chatIsClosed = true;
+        renderClientChatMessages();
+      }
+    }, 60 * 60 * 1000);
     // Limpiar el ID guardado: el pedido ya terminó
     setTimeout(() => {
       localStorage.removeItem('chipas_order_id');
       sessionStorage.removeItem('chipas_order_id');
     }, 60 * 60 * 1000); // 1 hora después de entregado
   }
+  // Update chat FAB visibility
+  updateChatFab(order);
 }
 
 async function editOrder() {
@@ -1782,6 +1976,8 @@ function initAdmin() {
   } else if ('Notification' in window && Notification.permission === 'granted') {
     subscribeToPush('admin', null);
   }
+
+  initAdminChatListeners();
 
   db.channel('admin-orders')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_orders' }, (payload) => {
@@ -1871,15 +2067,24 @@ function renderAdminOrders() {
     const isNew = order.status === 'pendiente' && (nowMs - new Date(order.created_at).getTime()) < 120000;
     card.className = 'order-card' + (isNew ? ' new-order' : '');
 
+    const chatOpen = adminOpenChats.has(order.id);
+    const hasUnread = (adminUnreadChats[order.id] || 0) > 0;
+    const chatLabel = `💬 Chat${hasUnread ? ` <span class="chat-unread-dot"></span>` : ''}`;
     let actions = '';
     if (order.status === 'pendiente') {
       actions = `<button class="action-btn btn-accept" onclick="adminUpdateStatus('${order.id}','aceptado')">✅ Aceptar</button>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Rechazar</button>`;
     } else if (order.status === 'aceptado') {
       actions = `<button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🛵 Enviar</button>
-                 <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>`;
+                 <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>
+                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else if (order.status === 'en_camino') {
-      actions = `<button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">🏠 Marcar entregado</button>`;
+      actions = `<button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">🏠 Marcar entregado</button>
+                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
+    } else if (order.status === 'entregado') {
+      actions = `<button class="action-btn btn-accept" onclick="adminArchiveOrder('${order.id}')">📦 Archivar</button>
+                 <button class="action-btn btn-delete" onclick="adminDeleteOrder('${order.id}')">🗑 Borrar</button>
+                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else {
       actions = `<button class="action-btn btn-accept" onclick="adminArchiveOrder('${order.id}')">📦 Archivar</button>
                  <button class="action-btn btn-delete" onclick="adminDeleteOrder('${order.id}')">🗑 Borrar</button>`;
@@ -1926,8 +2131,30 @@ function renderAdminOrders() {
           <div class="order-item-row" style="font-weight:700;color:var(--gold)"><span>TOTAL</span><span>${formatPrice(order.total)}</span></div>
         </div>
         <div class="order-actions">${actions}</div>
+        ${order.status !== 'cancelado' ? `
+        <div class="admin-chat-panel" id="admin-chat-panel-${order.id}">
+          <div class="admin-chat-msgs" id="admin-chat-msgs-${order.id}"></div>
+          <div class="admin-chat-input">
+            <textarea id="admin-chat-txt-${order.id}" placeholder="Responder a ${order.nombre}..." rows="1"
+              oninput="autoResizeChat(this)"
+              onkeydown="handleAdminChatKey(event, '${order.id}')"></textarea>
+            <button class="btn-chat-send" onclick="sendAdminMessage('${order.id}')" title="Enviar">➤</button>
+          </div>
+          <div class="admin-chat-footer">
+            <button class="btn-admin-close-chat" onclick="adminCloseChat('${order.id}')">🔒 Cerrar chat</button>
+          </div>
+        </div>` : ''}
       </div>`;
     list.appendChild(card);
+    // Restore admin chat open state
+    if (chatOpen && order.status !== 'cancelado') {
+      const panel = document.getElementById('admin-chat-panel-' + order.id);
+      if (panel) {
+        panel.classList.add('open');
+        loadAdminChatMessages(order.id);
+        subscribeAdminChat(order.id);
+      }
+    }
   });
 }
 
@@ -2178,6 +2405,281 @@ function desactivarModoEncargo() {
     submitBtn.style.background = '';
   }
   checkStoreClosed();
+}
+
+// ===== CHAT =====
+// SUPABASE: Crear tabla chipas_chats:
+// CREATE TABLE chipas_chats (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   order_id text NOT NULL,
+//   sender text NOT NULL CHECK (sender IN ('client','admin')),
+//   message text NOT NULL,
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_chats ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow all" ON chipas_chats FOR ALL USING (true) WITH CHECK (true);
+// ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_closed boolean DEFAULT false;
+// -- RLS en chipas_orders: agregar política si no existe
+let chatChannel = null;
+let chatMessages = [];
+let chatIsClosed = false;
+let adminOpenChats = new Set();
+let adminUnreadChats = {};
+let adminChatChannels = {};
+
+// --- CLIENTE ---
+function openClientChat() {
+  if (!myOrderId) return;
+  document.getElementById('chat-modal-overlay').classList.add('open');
+  document.getElementById('chat-fab-badge').classList.remove('show');
+  adminUnreadChats[myOrderId] = 0; // reset local badge
+  loadClientChatMessages();
+  subscribeClientChat();
+}
+
+function closeClientChat() {
+  document.getElementById('chat-modal-overlay').classList.remove('open');
+}
+
+function handleChatOverlayClick(e) {
+  if (e.target === document.getElementById('chat-modal-overlay')) closeClientChat();
+}
+
+function autoResizeChat(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendClientMessage(); }
+}
+
+function handleAdminChatKey(e, orderId) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminMessage(orderId); }
+}
+
+async function loadClientChatMessages() {
+  if (!myOrderId) return;
+  const { data } = await db.from('chipas_chats').select('*').eq('order_id', myOrderId).order('created_at');
+  chatMessages = data || [];
+
+  // Check if chat is closed
+  const { data: orderData } = await db.from('chipas_orders').select('chat_closed').eq('id', myOrderId).single();
+  chatIsClosed = !!(orderData && orderData.chat_closed);
+
+  renderClientChatMessages();
+}
+
+function renderClientChatMessages() {
+  const el = document.getElementById('chat-messages');
+  const inputBar = document.getElementById('chat-input-bar');
+  const closedNotice = document.getElementById('chat-closed-notice');
+  if (!el) return;
+
+  if (!chatMessages.length) {
+    el.innerHTML = '<div class="chat-empty">👋 Escribinos si tenés alguna duda sobre tu pedido</div>';
+  } else {
+    el.innerHTML = chatMessages.map(m => {
+      const isAdmin = m.sender === 'admin';
+      const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+      return `<div class="chat-msg ${isAdmin ? 'from-admin' : 'from-client'}">
+        ${escapeHtml(m.message)}
+        <div class="chat-msg-time">${isAdmin ? '🛍 Vendedor · ' : ''}${time}</div>
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  if (chatIsClosed) {
+    closedNotice.style.display = 'block';
+    inputBar.style.display = 'none';
+  } else {
+    closedNotice.style.display = 'none';
+    inputBar.style.display = 'flex';
+  }
+
+  // Update sub
+  const sub = document.getElementById('chat-modal-sub');
+  if (sub) sub.textContent = 'Pedido ' + (myOrderId || '');
+}
+
+function subscribeClientChat() {
+  if (chatChannel) return;
+  if (!myOrderId) return;
+  chatChannel = db.channel('chat-client-' + myOrderId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats',
+        filter: 'order_id=eq.' + myOrderId }, (payload) => {
+      if (payload.new) {
+        chatMessages.push(payload.new);
+        if (document.getElementById('chat-modal-overlay').classList.contains('open')) {
+          renderClientChatMessages();
+        } else if (payload.new.sender === 'admin') {
+          // Show badge
+          const badge = document.getElementById('chat-fab-badge');
+          const current = parseInt(badge.textContent || '0') + 1;
+          badge.textContent = current;
+          badge.classList.add('show');
+          showToast('💬 Nuevo mensaje del vendedor');
+        }
+      }
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders',
+        filter: 'id=eq.' + myOrderId }, (payload) => {
+      if (payload.new && payload.new.chat_closed !== undefined) {
+        chatIsClosed = !!payload.new.chat_closed;
+        renderClientChatMessages();
+        if (chatIsClosed) showToast('🔒 El chat fue cerrado por el vendedor');
+      }
+    })
+    .subscribe();
+}
+
+async function sendClientMessage() {
+  if (!myOrderId || chatIsClosed) return;
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('btn-chat-send');
+  btn.disabled = true;
+  const { error } = await db.from('chipas_chats').insert({
+    order_id: myOrderId,
+    sender: 'client',
+    message: msg,
+    created_at: new Date().toISOString()
+  });
+  if (!error) { input.value = ''; input.style.height = 'auto'; }
+  btn.disabled = false;
+  if (error) showToast('❌ No se pudo enviar');
+}
+
+function updateChatFab(order) {
+  const fab = document.getElementById('chat-fab');
+  if (!fab) return;
+  const active = ['aceptado','en_camino','entregado'].includes(order.status);
+  if (active && !order.chat_closed) {
+    fab.style.display = 'flex';
+    subscribeClientChat();
+  } else if (order.chat_closed && document.getElementById('chat-modal-overlay').classList.contains('open')) {
+    chatIsClosed = true;
+    renderClientChatMessages();
+    fab.style.display = 'flex'; // keep visible to read history
+  } else if (!active) {
+    fab.style.display = 'none';
+    document.getElementById('chat-modal-overlay').classList.remove('open');
+  }
+}
+
+// --- ADMIN ---
+function toggleAdminChat(orderId) {
+  if (adminOpenChats.has(orderId)) {
+    adminOpenChats.delete(orderId);
+    const panel = document.getElementById('admin-chat-panel-' + orderId);
+    if (panel) panel.classList.remove('open');
+  } else {
+    adminOpenChats.add(orderId);
+    adminUnreadChats[orderId] = 0;
+    const panel = document.getElementById('admin-chat-panel-' + orderId);
+    if (panel) {
+      panel.classList.add('open');
+      loadAdminChatMessages(orderId);
+      subscribeAdminChat(orderId);
+    }
+  }
+}
+
+async function loadAdminChatMessages(orderId) {
+  const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
+  renderAdminChatMessages(orderId, data || []);
+}
+
+function renderAdminChatMessages(orderId, messages) {
+  const el = document.getElementById('admin-chat-msgs-' + orderId);
+  if (!el) return;
+  if (!messages.length) {
+    el.innerHTML = '<div class="chat-empty">Sin mensajes aún</div>';
+  } else {
+    el.innerHTML = messages.map(m => {
+      const isAdmin = m.sender === 'admin';
+      const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+      return `<div class="chat-msg ${isAdmin ? 'from-admin' : 'from-client'}" style="max-width:90%">
+        ${escapeHtml(m.message)}
+        <div class="chat-msg-time">${isAdmin ? '🛍 Vos · ' : '👤 Cliente · '}${time}</div>
+      </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function subscribeAdminChat(orderId) {
+  if (adminChatChannels[orderId]) return;
+  adminChatChannels[orderId] = db.channel('chat-admin-' + orderId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats',
+        filter: 'order_id=eq.' + orderId }, async (payload) => {
+      if (payload.new && payload.new.sender === 'client') {
+        if (adminOpenChats.has(orderId)) {
+          // Reload messages for this panel
+          const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
+          renderAdminChatMessages(orderId, data || []);
+        } else {
+          adminUnreadChats[orderId] = (adminUnreadChats[orderId] || 0) + 1;
+          playNotificationSound();
+          sendBrowserNotification('💬 Mensaje de cliente', payload.new.message.substring(0,60), 'chat-' + orderId);
+          renderAdminOrders(); // re-render to show dot
+        }
+      }
+    })
+    .subscribe();
+}
+
+async function sendAdminMessage(orderId) {
+  const txt = document.getElementById('admin-chat-txt-' + orderId);
+  if (!txt) return;
+  const msg = txt.value.trim();
+  if (!msg) return;
+  txt.value = '';
+  txt.style.height = 'auto';
+  const { error } = await db.from('chipas_chats').insert({
+    order_id: orderId,
+    sender: 'admin',
+    message: msg,
+    created_at: new Date().toISOString()
+  });
+  if (error) { showToast('❌ No se pudo enviar'); return; }
+  // reload
+  const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
+  renderAdminChatMessages(orderId, data || []);
+}
+
+async function adminCloseChat(orderId) {
+  if (!confirm('¿Cerrar el chat de este pedido? El cliente no podrá enviar más mensajes.')) return;
+  const { error } = await db.from('chipas_orders').update({ chat_closed: true, updated_at: new Date().toISOString() }).eq('id', orderId);
+  if (error) { showToast('❌ Error al cerrar el chat'); return; }
+  adminOpenChats.delete(orderId);
+  renderAdminOrders();
+  showToast('🔒 Chat cerrado');
+}
+
+// Subscribe to all active chats when admin loads
+async function initAdminChatListeners() {
+  // Listen for new messages on any active order
+  db.channel('chat-admin-global')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats' }, (payload) => {
+      if (!payload.new || payload.new.sender !== 'client') return;
+      const orderId = payload.new.order_id;
+      if (adminOpenChats.has(orderId)) {
+        // Will be caught by per-order channel
+      } else {
+        adminUnreadChats[orderId] = (adminUnreadChats[orderId] || 0) + 1;
+        playNotificationSound();
+        sendBrowserNotification('💬 Mensaje de cliente', payload.new.message.substring(0,60), 'chat-' + orderId);
+        renderAdminOrders();
+      }
+    })
+    .subscribe();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
 }
 
 // START
