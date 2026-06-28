@@ -1346,7 +1346,7 @@ async function saveSettings() {
     if (error) throw error;
     showToast('✅ Cambios guardados');
   } catch (e) {
-    showToast('⚠️ Guardado en este dispositivo. Creá la tabla chipas_settings en Supabase para sincronizar.');
+    showToast('⚠️ Guardado solo en este dispositivo. Error de Supabase: ' + (e?.message || 'revisá la tabla chipas_settings'));
   }
 }
 
@@ -1463,6 +1463,16 @@ function playNotificationSound() {
 
 
 // ===== HORARIO =====
+async function refreshStoreStatus() {
+  try {
+    const { data, error } = await db.from('chipas_settings').select('*').eq('id', 'main').single();
+    if (!error && data) {
+      settings = { ...settings, ...data };
+      saveLocalSettings();
+    }
+  } catch (e) {}
+  checkStoreClosed();
+}
 function isStoreOpenNow() {
   const now = new Date();
   const [aH, aM] = (settings.horario_apertura || '09:00').split(':').map(Number);
@@ -1494,14 +1504,26 @@ function checkStoreClosed() {
 }
 
 async function toggleTienda(el) {
-  settings.tienda_cerrada = !el.checked;
+  const nuevoEstado = !el.checked;
+  settings.tienda_cerrada = nuevoEstado;
   document.getElementById('store-status-label').textContent = settings.tienda_cerrada
     ? '🔴 Tienda cerrada manualmente'
     : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
   saveLocalSettings();
   try {
-    await db.from('chipas_settings').upsert({ id: 'main', tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString() });
-  } catch(e) {}
+    const { error } = await db.from('chipas_settings').upsert({ id: 'main', tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  } catch(e) {
+    // No se pudo guardar en Supabase: revertimos el switch y avisamos con el error real
+    settings.tienda_cerrada = !nuevoEstado;
+    el.checked = !el.checked;
+    saveLocalSettings();
+    document.getElementById('store-status-label').textContent = settings.tienda_cerrada
+      ? '🔴 Tienda cerrada manualmente'
+      : (isStoreOpenNow() ? '🟢 Tienda abierta' : '🟡 Fuera de horario');
+    showToast('❌ No se pudo guardar: ' + (e?.message || 'revisá la tabla chipas_settings en Supabase'));
+    return;
+  }
   showToast(settings.tienda_cerrada ? '🔴 Tienda cerrada' : '🟢 Tienda abierta');
   // Actualizar banner para clientes en esta misma sesión (si admin abre en otra pestaña)
   const banner = document.getElementById('closed-banner');
@@ -1568,7 +1590,7 @@ async function init() {
 function initCliente() {
   renderProducts();
   checkStoreClosed();
-  setInterval(checkStoreClosed, 60000); // re-chequear cada minuto
+  setInterval(refreshStoreStatus, 30000); // re-consulta Supabase cada 30s (no solo memoria local)
   if (myOrderId) { checkMyOrder(); subscribeClientChat(); }
 
   db.channel('my-order')
