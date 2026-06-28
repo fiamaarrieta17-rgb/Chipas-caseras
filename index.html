@@ -593,7 +593,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
 <!-- LOADING -->
 <div id="loading-screen">
-  <h2 id="loading-title">Chipas <span>Premium</span></h2>
+  <h2 id="loading-title"><span>Cargando...</span></h2>
   <div class="spinner"></div>
 </div>
 
@@ -814,6 +814,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div class="chat-header-title">Chat con el vendedor</div>
         <div class="chat-header-sub" id="chat-modal-sub">Pedido activo</div>
       </div>
+      <button class="btn-admin-close-chat" onclick="clientCloseChat()" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 6px;white-space:nowrap">🔒 Cerrar chat</button>
       <button class="btn-chat-close" onclick="closeClientChat()">✕</button>
     </div>
     <div class="chat-messages" id="chat-messages"></div>
@@ -1902,13 +1903,6 @@ function updateStatusTracker(order) {
   if (order.status === 'entregado') {
     arrivedBanner.style.display = 'block';
     setTimeout(() => arrivedBanner.style.display = 'none', 8000);
-    // Cerrar chat 1hr después de entregado
-    setTimeout(() => {
-      if (myOrderId === order.id) {
-        chatIsClosed = true;
-        renderClientChatMessages();
-      }
-    }, 60 * 60 * 1000);
     // Limpiar el ID guardado: el pedido ya terminó
     setTimeout(() => {
       localStorage.removeItem('chipas_order_id');
@@ -2134,13 +2128,13 @@ function renderAdminOrders() {
         ${order.status !== 'cancelado' ? `
         <div class="admin-chat-panel" id="admin-chat-panel-${order.id}">
           <div class="admin-chat-msgs" id="admin-chat-msgs-${order.id}"></div>
-          <div class="admin-chat-input">
+          <div class="admin-chat-input" id="admin-chat-input-${order.id}">
             <textarea id="admin-chat-txt-${order.id}" placeholder="Responder a ${order.nombre}..." rows="1"
               oninput="autoResizeChat(this)"
               onkeydown="handleAdminChatKey(event, '${order.id}')"></textarea>
             <button class="btn-chat-send" onclick="sendAdminMessage('${order.id}')" title="Enviar">➤</button>
           </div>
-          <div class="admin-chat-footer">
+          <div class="admin-chat-footer" id="admin-chat-footer-${order.id}">
             <button class="btn-admin-close-chat" onclick="adminCloseChat('${order.id}')">🔒 Cerrar chat</button>
           </div>
         </div>` : ''}
@@ -2165,10 +2159,25 @@ function toggleCard(id) {
 }
 
 async function adminUpdateStatus(id, status) {
-  const { error } = await db.from('chipas_orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+  const updateData = { status, updated_at: new Date().toISOString() };
+  // Al aceptar: guardar timestamp para el auto-cierre del chat (1hr)
+  if (status === 'aceptado') updateData.chat_accepted_at = new Date().toISOString();
+  const { error } = await db.from('chipas_orders').update(updateData).eq('id', id);
   if (error) { showToast('❌ Error al actualizar'); return; }
   const msgs = { aceptado:'✅ Pedido aceptado', en_camino:'🛵 Pedido en camino', entregado:'🏠 Pedido entregado', cancelado:'✕ Pedido cancelado' };
   showToast(msgs[status] || 'Actualizado');
+  // Si se acepta, programar cierre automático del chat en 1hr (en el admin también)
+  if (status === 'aceptado') {
+    setTimeout(() => {
+      db.from('chipas_orders').update({
+        chat_closed: true,
+        chat_closed_by: 'auto',
+        updated_at: new Date().toISOString()
+      }).eq('id', id).eq('chat_closed', false).then(({ error }) => {
+        if (!error) showToast('⏰ Chat de ' + id + ' cerrado automáticamente');
+      });
+    }, 60 * 60 * 1000);
+  }
 }
 
 async function adminArchiveOrder(id) {
@@ -2408,8 +2417,8 @@ function desactivarModoEncargo() {
 }
 
 // ===== CHAT =====
-// SUPABASE: Crear tabla chipas_chats:
-// CREATE TABLE chipas_chats (
+// SUPABASE SQL (correr una vez):
+// CREATE TABLE IF NOT EXISTS chipas_chats (
 //   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
 //   order_id text NOT NULL,
 //   sender text NOT NULL CHECK (sender IN ('client','admin')),
@@ -2419,10 +2428,13 @@ function desactivarModoEncargo() {
 // ALTER TABLE chipas_chats ENABLE ROW LEVEL SECURITY;
 // CREATE POLICY "allow all" ON chipas_chats FOR ALL USING (true) WITH CHECK (true);
 // ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_closed boolean DEFAULT false;
-// -- RLS en chipas_orders: agregar política si no existe
+// ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_closed_by text DEFAULT null;
+// ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_accepted_at timestamptz DEFAULT null;
 let chatChannel = null;
 let chatMessages = [];
 let chatIsClosed = false;
+let chatClosedBy = null; // 'admin' | 'client' | 'auto'
+let chatAutoCloseTimer = null;
 let adminOpenChats = new Set();
 let adminUnreadChats = {};
 let adminChatChannels = {};
@@ -2432,7 +2444,7 @@ function openClientChat() {
   if (!myOrderId) return;
   document.getElementById('chat-modal-overlay').classList.add('open');
   document.getElementById('chat-fab-badge').classList.remove('show');
-  adminUnreadChats[myOrderId] = 0; // reset local badge
+  document.getElementById('chat-fab-badge').textContent = '0';
   loadClientChatMessages();
   subscribeClientChat();
 }
@@ -2463,11 +2475,40 @@ async function loadClientChatMessages() {
   const { data } = await db.from('chipas_chats').select('*').eq('order_id', myOrderId).order('created_at');
   chatMessages = data || [];
 
-  // Check if chat is closed
-  const { data: orderData } = await db.from('chipas_orders').select('chat_closed').eq('id', myOrderId).single();
-  chatIsClosed = !!(orderData && orderData.chat_closed);
+  const { data: orderData } = await db.from('chipas_orders')
+    .select('chat_closed,chat_closed_by,chat_accepted_at,status')
+    .eq('id', myOrderId).single();
 
+  if (orderData) {
+    chatIsClosed = !!orderData.chat_closed;
+    chatClosedBy = orderData.chat_closed_by || null;
+    // Schedule auto-close if accepted and not yet closed
+    if (!chatIsClosed && orderData.chat_accepted_at) {
+      scheduleChatAutoClose(orderData.chat_accepted_at);
+    }
+  }
   renderClientChatMessages();
+}
+
+function scheduleChatAutoClose(acceptedAt) {
+  if (chatAutoCloseTimer) clearTimeout(chatAutoCloseTimer);
+  const elapsed = Date.now() - new Date(acceptedAt).getTime();
+  const remaining = (60 * 60 * 1000) - elapsed; // 1hr desde que se aceptó
+  if (remaining <= 0) {
+    // Already expired client-side; server should have it; just mark closed
+    chatIsClosed = true;
+    chatClosedBy = 'auto';
+    renderClientChatMessages();
+    return;
+  }
+  chatAutoCloseTimer = setTimeout(() => {
+    chatIsClosed = true;
+    chatClosedBy = 'auto';
+    renderClientChatMessages();
+    showToast('⏰ El chat se cerró automáticamente (1 hora)');
+    const fab = document.getElementById('chat-fab');
+    if (fab) fab.style.display = 'none';
+  }, remaining);
 }
 
 function renderClientChatMessages() {
@@ -2491,6 +2532,10 @@ function renderClientChatMessages() {
   }
 
   if (chatIsClosed) {
+    const closedMsg = chatClosedBy === 'admin' ? '🔒 El vendedor cerró el chat'
+      : chatClosedBy === 'client' ? '🔒 Cerraste el chat'
+      : '⏰ El chat se cerró automáticamente (1 hora)';
+    closedNotice.textContent = closedMsg;
     closedNotice.style.display = 'block';
     inputBar.style.display = 'none';
   } else {
@@ -2498,7 +2543,6 @@ function renderClientChatMessages() {
     inputBar.style.display = 'flex';
   }
 
-  // Update sub
   const sub = document.getElementById('chat-modal-sub');
   if (sub) sub.textContent = 'Pedido ' + (myOrderId || '');
 }
@@ -2514,7 +2558,6 @@ function subscribeClientChat() {
         if (document.getElementById('chat-modal-overlay').classList.contains('open')) {
           renderClientChatMessages();
         } else if (payload.new.sender === 'admin') {
-          // Show badge
           const badge = document.getElementById('chat-fab-badge');
           const current = parseInt(badge.textContent || '0') + 1;
           badge.textContent = current;
@@ -2525,13 +2568,32 @@ function subscribeClientChat() {
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders',
         filter: 'id=eq.' + myOrderId }, (payload) => {
-      if (payload.new && payload.new.chat_closed !== undefined) {
-        chatIsClosed = !!payload.new.chat_closed;
+      if (!payload.new) return;
+      if (payload.new.chat_closed && !chatIsClosed) {
+        chatIsClosed = true;
+        chatClosedBy = payload.new.chat_closed_by || 'admin';
         renderClientChatMessages();
-        if (chatIsClosed) showToast('🔒 El chat fue cerrado por el vendedor');
+        const msg = chatClosedBy === 'admin' ? '🔒 El vendedor cerró el chat' : '⏰ Chat cerrado automáticamente';
+        showToast(msg);
       }
     })
     .subscribe();
+}
+
+async function clientCloseChat() {
+  if (!myOrderId) return;
+  if (!confirm('¿Cerrar el chat? Ni vos ni el vendedor podrán enviar más mensajes.')) return;
+  const { error } = await db.from('chipas_orders').update({
+    chat_closed: true,
+    chat_closed_by: 'client',
+    updated_at: new Date().toISOString()
+  }).eq('id', myOrderId);
+  if (error) { showToast('❌ Error al cerrar el chat'); return; }
+  chatIsClosed = true;
+  chatClosedBy = 'client';
+  renderClientChatMessages();
+  if (chatAutoCloseTimer) clearTimeout(chatAutoCloseTimer);
+  showToast('🔒 Chat cerrado');
 }
 
 async function sendClientMessage() {
@@ -2552,18 +2614,28 @@ async function sendClientMessage() {
   if (error) showToast('❌ No se pudo enviar');
 }
 
+// Called from updateStatusTracker when order changes
 function updateChatFab(order) {
   const fab = document.getElementById('chat-fab');
   if (!fab) return;
-  const active = ['aceptado','en_camino','entregado'].includes(order.status);
-  if (active && !order.chat_closed) {
+  // Chat activates only when accepted (status 'aceptado' or later), and stays visible until closed
+  const chatEligible = ['aceptado','en_camino','entregado'].includes(order.status);
+  if (chatEligible && !order.chat_closed) {
     fab.style.display = 'flex';
+    chatIsClosed = false;
+    chatClosedBy = null;
     subscribeClientChat();
-  } else if (order.chat_closed && document.getElementById('chat-modal-overlay').classList.contains('open')) {
+    // Schedule auto-close if accepted_at present
+    if (order.chat_accepted_at) scheduleChatAutoClose(order.chat_accepted_at);
+  } else if (chatEligible && order.chat_closed) {
+    // Keep FAB visible to read history
+    fab.style.display = 'flex';
     chatIsClosed = true;
-    renderClientChatMessages();
-    fab.style.display = 'flex'; // keep visible to read history
-  } else if (!active) {
+    chatClosedBy = order.chat_closed_by || 'auto';
+    if (document.getElementById('chat-modal-overlay').classList.contains('open')) {
+      renderClientChatMessages();
+    }
+  } else {
     fab.style.display = 'none';
     document.getElementById('chat-modal-overlay').classList.remove('open');
   }
@@ -2589,12 +2661,19 @@ function toggleAdminChat(orderId) {
 
 async function loadAdminChatMessages(orderId) {
   const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
-  renderAdminChatMessages(orderId, data || []);
+  const { data: orderData } = await db.from('chipas_orders')
+    .select('chat_closed,chat_closed_by').eq('id', orderId).single();
+  const isClosed = !!(orderData && orderData.chat_closed);
+  const closedBy = orderData?.chat_closed_by || null;
+  renderAdminChatMessages(orderId, data || [], isClosed, closedBy);
 }
 
-function renderAdminChatMessages(orderId, messages) {
+function renderAdminChatMessages(orderId, messages, isClosed, closedBy) {
   const el = document.getElementById('admin-chat-msgs-' + orderId);
+  const footer = document.getElementById('admin-chat-footer-' + orderId);
+  const inputDiv = document.getElementById('admin-chat-input-' + orderId);
   if (!el) return;
+
   if (!messages.length) {
     el.innerHTML = '<div class="chat-empty">Sin mensajes aún</div>';
   } else {
@@ -2608,6 +2687,17 @@ function renderAdminChatMessages(orderId, messages) {
     }).join('');
     el.scrollTop = el.scrollHeight;
   }
+
+  if (isClosed) {
+    const msg = closedBy === 'client' ? '🔒 El cliente cerró el chat'
+      : closedBy === 'admin' ? '🔒 Cerraste el chat'
+      : '⏰ Chat cerrado automáticamente (1 hora)';
+    if (footer) footer.innerHTML = `<span style="font-size:12px;color:var(--muted)">${msg}</span>`;
+    if (inputDiv) inputDiv.style.display = 'none';
+  } else {
+    if (footer) footer.innerHTML = `<button class="btn-admin-close-chat" onclick="adminCloseChat('${orderId}')">🔒 Cerrar chat</button>`;
+    if (inputDiv) inputDiv.style.display = 'flex';
+  }
 }
 
 function subscribeAdminChat(orderId) {
@@ -2617,15 +2707,27 @@ function subscribeAdminChat(orderId) {
         filter: 'order_id=eq.' + orderId }, async (payload) => {
       if (payload.new && payload.new.sender === 'client') {
         if (adminOpenChats.has(orderId)) {
-          // Reload messages for this panel
           const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
-          renderAdminChatMessages(orderId, data || []);
+          renderAdminChatMessages(orderId, data || [], false, null);
         } else {
           adminUnreadChats[orderId] = (adminUnreadChats[orderId] || 0) + 1;
           playNotificationSound();
           sendBrowserNotification('💬 Mensaje de cliente', payload.new.message.substring(0,60), 'chat-' + orderId);
-          renderAdminOrders(); // re-render to show dot
+          renderAdminOrders();
         }
+      }
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders',
+        filter: 'id=eq.' + orderId }, (payload) => {
+      if (payload.new && payload.new.chat_closed && adminOpenChats.has(orderId)) {
+        const closedBy = payload.new.chat_closed_by || null;
+        const msg = closedBy === 'client' ? '💬 El cliente cerró el chat' : '⏰ Chat cerrado automáticamente';
+        if (closedBy !== 'admin') {
+          showToast(msg);
+          playNotificationSound();
+        }
+        // Reload to show closed state
+        loadAdminChatMessages(orderId);
       }
     })
     .subscribe();
@@ -2645,30 +2747,30 @@ async function sendAdminMessage(orderId) {
     created_at: new Date().toISOString()
   });
   if (error) { showToast('❌ No se pudo enviar'); return; }
-  // reload
   const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
-  renderAdminChatMessages(orderId, data || []);
+  renderAdminChatMessages(orderId, data || [], false, null);
 }
 
 async function adminCloseChat(orderId) {
-  if (!confirm('¿Cerrar el chat de este pedido? El cliente no podrá enviar más mensajes.')) return;
-  const { error } = await db.from('chipas_orders').update({ chat_closed: true, updated_at: new Date().toISOString() }).eq('id', orderId);
+  if (!confirm('¿Cerrar el chat? El cliente recibirá un aviso y no podrá enviar más mensajes.')) return;
+  const { error } = await db.from('chipas_orders').update({
+    chat_closed: true,
+    chat_closed_by: 'admin',
+    updated_at: new Date().toISOString()
+  }).eq('id', orderId);
   if (error) { showToast('❌ Error al cerrar el chat'); return; }
   adminOpenChats.delete(orderId);
   renderAdminOrders();
   showToast('🔒 Chat cerrado');
 }
 
-// Subscribe to all active chats when admin loads
+// Subscribe globally to new client messages
 async function initAdminChatListeners() {
-  // Listen for new messages on any active order
   db.channel('chat-admin-global')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats' }, (payload) => {
       if (!payload.new || payload.new.sender !== 'client') return;
       const orderId = payload.new.order_id;
-      if (adminOpenChats.has(orderId)) {
-        // Will be caught by per-order channel
-      } else {
+      if (!adminOpenChats.has(orderId)) {
         adminUnreadChats[orderId] = (adminUnreadChats[orderId] || 0) + 1;
         playNotificationSound();
         sendBrowserNotification('💬 Mensaje de cliente', payload.new.message.substring(0,60), 'chat-' + orderId);
