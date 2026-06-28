@@ -1294,15 +1294,23 @@ function openMercadoPago() {
   const link = /^https?:\/\//i.test(settings.payment_link) ? settings.payment_link : `https://${settings.payment_link}`;
   window.open(link, '_blank');
 }
+async function fetchSettingsRow() {
+  // Usamos order+limit en vez de .single() para no romper si hay más de una fila con id='main'
+  // (eso pasa cuando la tabla no tiene una restricción única en la columna id).
+  const { data, error } = await db.from('chipas_settings')
+    .select('*')
+    .eq('id', 'main')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  if (error) { console.warn('chipas_settings: error al leer', error); return null; }
+  return (data && data.length) ? data[0] : null;
+}
 async function loadSettings() {
   loadLocalSettings();
   try {
-    const { data, error } = await db.from('chipas_settings').select('*').eq('id', 'main').single();
-    if (!error && data) {
-      settings = { ...settings, ...data };
-      saveLocalSettings();
-    }
-  } catch (e) {}
+    const row = await fetchSettingsRow();
+    if (row) { settings = { ...settings, ...row }; saveLocalSettings(); }
+  } catch (e) { console.warn('chipas_settings: excepción al leer', e); }
   applyBranding();
 }
 function previewConfig() {
@@ -1364,7 +1372,7 @@ async function saveSettings() {
   applyBranding();
   updateCartSummary();
   try {
-    const { error } = await db.from('chipas_settings').upsert({ id: 'main', ...newSettings, updated_at: new Date().toISOString() });
+    const { error } = await db.from('chipas_settings').upsert({ id: 'main', ...newSettings, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if (error) throw error;
     showToast('✅ Cambios guardados');
   } catch (e) {
@@ -1487,11 +1495,8 @@ function playNotificationSound() {
 // ===== HORARIO =====
 async function refreshStoreStatus() {
   try {
-    const { data, error } = await db.from('chipas_settings').select('*').eq('id', 'main').single();
-    if (!error && data) {
-      settings = { ...settings, ...data };
-      saveLocalSettings();
-    }
+    const row = await fetchSettingsRow();
+    if (row) { settings = { ...settings, ...row }; saveLocalSettings(); }
   } catch (e) {}
   checkStoreClosed();
 }
@@ -1544,7 +1549,7 @@ async function setStoreMode(mode) {
   try {
     const { error } = await db.from('chipas_settings').upsert({
       id: 'main', modo_tienda: mode, tienda_cerrada: settings.tienda_cerrada, updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'id' });
     if (error) throw error;
   } catch(e) {
     // No se pudo guardar en Supabase: revertimos y avisamos con el error real
