@@ -43,6 +43,112 @@ button, input, textarea { font-family: inherit; }
 .fade-in { animation: fadeUp 0.45s ease both; }
 
 
+/* ===== LOCALIDADES DE ENVÍO ===== */
+.localidades-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.localidad-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 12px;
+}
+.localidad-row input[type="text"] {
+  flex: 2; border: none; background: transparent; font-size: 13px;
+  font-family: inherit; color: var(--text); outline: none; min-width: 0;
+}
+.localidad-row input[type="number"] {
+  flex: 1; border: none; background: transparent; font-size: 13px;
+  font-family: inherit; color: var(--text); outline: none;
+  text-align: right; min-width: 60px;
+}
+.localidad-row .loc-sep { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.localidad-row .btn-del-loc {
+  background: none; border: none; color: var(--red); font-size: 16px;
+  cursor: pointer; padding: 2px 4px; flex-shrink: 0; line-height: 1;
+}
+.btn-add-localidad {
+  width: 100%; padding: 10px; border: 1.5px dashed var(--border);
+  border-radius: 10px; background: transparent; font-size: 13px;
+  font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-add-localidad:hover { border-color: var(--gold); color: var(--gold); }
+.localidad-select-wrap { position: relative; }
+.localidad-select-wrap select {
+  width: 100%; padding: 12px 36px 12px 14px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 15px; font-family: inherit; background: var(--cream);
+  color: var(--text); outline: none; appearance: none;
+  transition: border-color 0.2s; cursor: pointer;
+}
+.localidad-select-wrap select:focus { border-color: var(--gold); background: #fff; }
+.localidad-select-wrap::after {
+  content: '▾'; position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%); color: var(--muted); pointer-events: none;
+}
+.localidad-fee-preview {
+  margin-top: 6px; font-size: 12px; color: var(--muted); min-height: 16px;
+}
+.loc-col-labels {
+  display: flex; gap: 8px; padding: 0 12px;
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 4px;
+}
+.loc-col-labels span:first-child { flex: 2; }
+.loc-col-labels span:last-child { flex: 1; text-align: right; }
+
+/* ===== RESEÑAS ===== */
+.review-section {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 20px 18px; margin-bottom: 20px; display: none;
+}
+.review-section h3 { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+.review-section p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.star-selector { display: flex; gap: 8px; margin-bottom: 16px; justify-content: center; }
+.star-selector .star {
+  font-size: 36px; cursor: pointer; transition: transform 0.15s, filter 0.15s;
+  filter: grayscale(1) opacity(0.4);
+  user-select: none;
+}
+.star-selector .star.active { filter: none; transform: scale(1.15); }
+.star-selector .star:hover { transform: scale(1.25); filter: none; }
+.review-textarea {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 13px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+  resize: none; min-height: 80px; line-height: 1.5; transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+.review-textarea:focus { border-color: var(--gold); background: #fff; }
+.btn-send-review {
+  width: 100%; padding: 13px; background: var(--gold); color: #fff;
+  border: none; border-radius: 11px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.btn-send-review:hover { background: #b8832e; }
+.btn-send-review:disabled { background: #ccc; cursor: not-allowed; }
+.review-sent-msg { text-align: center; padding: 12px; color: var(--green); font-weight: 700; font-size: 14px; display: none; }
+
+/* Admin reseñas panel */
+.reviews-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.reviews-stat-card { background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; text-align: center; }
+.reviews-stat-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.reviews-stat-val { font-size: 26px; font-weight: 800; color: var(--gold); }
+.reviews-stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.review-card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 10px;
+}
+.review-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.review-card-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+.review-card-stars { font-size: 18px; letter-spacing: 1px; }
+.review-card-date { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.review-card-comment { font-size: 13px; color: var(--text); line-height: 1.5; background: var(--cream); border-radius: 8px; padding: 8px 12px; }
+.review-card-no-comment { font-size: 12px; color: var(--muted); font-style: italic; }
+.reviews-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+.reviews-avg-big { text-align: center; padding: 14px 0 6px; }
+.reviews-avg-big .avg-num { font-size: 48px; font-weight: 900; color: var(--gold); line-height: 1; }
+.reviews-avg-big .avg-stars { font-size: 22px; letter-spacing: 2px; margin: 4px 0; }
+.reviews-avg-big .avg-label { font-size: 12px; color: var(--muted); }
+
 /* ===== HISTORIAL ===== */
 .historial-filter { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .historial-filter input[type="date"] { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; font-family: inherit; background: var(--cream); color: var(--text); outline: none; }
@@ -694,6 +800,23 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       <p>Tu pedido fue entregado. ¡Disfrutá!</p>
     </div>
 
+
+
+    <!-- RESEÑA (aparece solo cuando el pedido fue entregado) -->
+    <div class="review-section" id="review-section">
+      <h3>⭐ ¿Cómo estuvo tu pedido?</h3>
+      <p>Tu opinión nos ayuda a mejorar. ¡Gracias por tomarte un minuto!</p>
+      <div class="star-selector" id="star-selector">
+        <span class="star" data-val="1" onclick="selectStar(1)">⭐</span>
+        <span class="star" data-val="2" onclick="selectStar(2)">⭐</span>
+        <span class="star" data-val="3" onclick="selectStar(3)">⭐</span>
+        <span class="star" data-val="4" onclick="selectStar(4)">⭐</span>
+        <span class="star" data-val="5" onclick="selectStar(5)">⭐</span>
+      </div>
+      <textarea class="review-textarea" id="review-comment" placeholder="¿Querés dejar un comentario? (opcional)"></textarea>
+      <button class="btn-send-review" id="btn-send-review" onclick="submitReview()">Enviar reseña ✨</button>
+      <div class="review-sent-msg" id="review-sent-msg">💛 ¡Muchas gracias por tu reseña!</div>
+    </div>
     <div class="section-title">Elegí tu pedido</div>
     <div class="products-grid" id="products-grid"></div>
 
@@ -801,8 +924,13 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         </div>
         <div class="form-group">
           <label>LOCALIDAD</label>
-          <input type="text" id="f-localidad" placeholder="Ej: Morón, La Matanza..." />
-          <div class="error" id="e-localidad">Ingresá la localidad</div>
+          <div class="localidad-select-wrap">
+            <select id="f-localidad" onchange="onLocalidadChange()">
+              <option value="">— Elegí tu localidad —</option>
+            </select>
+          </div>
+          <div class="localidad-fee-preview" id="localidad-fee-preview"></div>
+          <div class="error" id="e-localidad">Elegí tu localidad</div>
         </div>
       </div>
       <div class="form-group">
@@ -865,6 +993,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div class="nav-item active" id="nav-pedidos" onclick="showAdminPanel('pedidos')">📦 Pedidos <span class="badge" id="badge-pending">0</span></div>
         <div class="nav-item" id="nav-precios" onclick="showAdminPanel('precios')">💰 Productos y Precios</div>
         <div class="nav-item" id="nav-historial" onclick="showAdminPanel('historial')">📊 Historial de ganancias</div>
+        <div class="nav-item" id="nav-resenas" onclick="showAdminPanel('resenas')">⭐ Reseñas de clientes</div>
         <div class="nav-label">Negocio</div>
         <div class="nav-item" id="nav-config" onclick="showAdminPanel('config')">⚙️ Configuración</div>
         <div class="nav-item" id="nav-seguridad" onclick="showAdminPanel('seguridad')">🔒 Seguridad</div>
@@ -932,16 +1061,15 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           <button class="btn-add-product" onclick="addNewProduct()">+ Agregar producto</button>
           <button class="btn-save-prices" onclick="savePrices()" style="margin-top:12px">💾 Guardar cambios</button>
 
-          <!-- ENVÍO A DOMICILIO -->
-          <div class="config-card" style="max-width:480px;margin-top:20px">
-            <h2>🛵 Envío a domicilio</h2>
-            <div class="config-intro">Cuando el cliente elige "A domicilio" se le suma este recargo al total del pedido. Si elige "Ir a buscar", no se cobra nada extra.</div>
-            <div class="form-group">
-              <label>RECARGO POR ENVÍO ($)</label>
-              <input type="number" id="cfg-delivery-fee" min="0" step="100" placeholder="Ej: 1000" oninput="previewDeliveryFee()" />
-              <div class="hint">Se aplica solo a pedidos a domicilio. Podés cambiarlo cuando quieras.</div>
-            </div>
-            <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
+          <!-- ENVÍO A DOMICILIO POR LOCALIDAD -->
+          <div class="config-card" style="max-width:540px;margin-top:20px">
+            <h2>🛵 Envío a domicilio por localidad</h2>
+            <div class="config-intro">El cliente elige su localidad y se le suma el costo correspondiente. Si no hay localidades cargadas, el envío no tiene recargo extra.</div>
+            <div class="loc-col-labels"><span>Localidad</span><span>Precio envío ($)</span></div>
+            <div class="localidades-list" id="localidades-list"></div>
+            <button class="btn-add-localidad" onclick="addLocalidadRow()">+ Agregar localidad</button>
+            <input type="hidden" id="cfg-delivery-fee" value="0" />
+            <button class="btn-save-prices" onclick="saveLocalidades()" style="margin-top:14px">💾 Guardar localidades</button>
           </div>
         </div>
 
@@ -1079,6 +1207,24 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
             <div class="login-error" id="sec-dni-error" style="text-align:left;margin-bottom:10px;margin-top:10px"></div>
             <button class="btn-save-prices" onclick="saveDniPin()" style="margin-top:10px">🪪 Guardar DNI + PIN</button>
           </div>
+        </div>
+
+
+        <!-- RESEÑAS ADMIN -->
+        <div id="admin-panel-resenas" style="display:none">
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px 18px;margin-bottom:16px">
+            <div class="reviews-avg-big" id="reviews-avg-box">
+              <div class="avg-num" id="reviews-avg-num">—</div>
+              <div class="avg-stars" id="reviews-avg-stars"></div>
+              <div class="avg-label" id="reviews-avg-label">Sin reseñas aún</div>
+            </div>
+          </div>
+          <div class="reviews-stats">
+            <div class="reviews-stat-card"><div class="reviews-stat-label">Total</div><div class="reviews-stat-val" id="rev-total">0</div><div class="reviews-stat-sub">Reseñas</div></div>
+            <div class="reviews-stat-card"><div class="reviews-stat-label">Promedio</div><div class="reviews-stat-val" id="rev-avg">—</div><div class="reviews-stat-sub">Estrellas</div></div>
+            <div class="reviews-stat-card"><div class="reviews-stat-label">5 estrellas</div><div class="reviews-stat-val" id="rev-five">0</div><div class="reviews-stat-sub">Reseñas</div></div>
+          </div>
+          <div id="reviews-list"></div>
         </div>
 
       </div>
@@ -1298,8 +1444,12 @@ function renderPaymentBox() {
 function updateDeliveryFeeHint() {
   const hint = document.getElementById('domicilio-fee-hint');
   if (!hint) return;
-  const fee = Number(settings.delivery_fee) || 0;
-  hint.textContent = fee > 0 ? `+${formatPrice(fee)}` : 'Sin recargo';
+  if (localidades.length > 0) {
+    hint.textContent = 'Precio según zona';
+  } else {
+    const fee = Number(settings.delivery_fee) || 0;
+    hint.textContent = fee > 0 ? `+${formatPrice(fee)}` : 'Sin recargo';
+  }
 }
 function copyAlias() {
   const text = settings.payment_alias || '';
@@ -1742,10 +1892,12 @@ function updateCartSummary() {
       lines += `<div class="cart-row"><span>${p.name} × ${q}</span><span>${formatPrice(sub)}</span></div>`;
     }
   });
-  const fee = Number(settings.delivery_fee) || 0;
+  const fee = deliveryMethod === 'domicilio' ? getLocalidadFee() : 0;
   if (hasItems && deliveryMethod === 'domicilio' && fee > 0) {
     lines += `<div class="cart-row"><span>🛵 Envío a domicilio</span><span>${formatPrice(fee)}</span></div>`;
     total += fee;
+  } else if (hasItems && deliveryMethod === 'domicilio' && fee === 0 && localidades.length > 0) {
+    lines += `<div class="cart-row"><span>🛵 Envío a domicilio</span><span style="color:var(--green)">Sin recargo</span></div>`;
   }
   if (hasItems) { cart.classList.add('visible'); itemsEl.innerHTML = lines; totalEl.textContent = formatPrice(total); }
   else cart.classList.remove('visible');
@@ -1779,7 +1931,7 @@ async function submitOrder() {
   const items = prices.filter(p => (quantities[p.id]||0) > 0).map(p => ({
     id: p.id, name: p.name, qty: quantities[p.id], price: p.price, subtotal: p.price * quantities[p.id]
   }));
-  const recargo = (deliveryMethod === 'domicilio') ? (Number(settings.delivery_fee) || 0) : 0;
+  const recargo = (deliveryMethod === 'domicilio') ? getLocalidadFee() : 0;
   const total = items.reduce((s,i) => s + i.subtotal, 0) + recargo;
   const orderId = (editMode && myOrderId) ? myOrderId : genId();
 
@@ -1991,6 +2143,7 @@ function updateStatusTracker(order) {
   if (order.status === 'entregado') {
     arrivedBanner.style.display = 'block';
     setTimeout(() => arrivedBanner.style.display = 'none', 8000);
+    showReviewSection(order.id);
     // Limpiar el ID guardado: el pedido ya terminó
     setTimeout(() => {
       localStorage.removeItem('chipas_order_id');
@@ -2296,9 +2449,9 @@ function filterOrders(status, el) {
 let localPrices = []; // edited copies
 let deletedIds = new Set();
 
-const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', config: 'Configuración', seguridad: 'Seguridad' };
+const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', config: 'Configuración', seguridad: 'Seguridad' };
 async function showAdminPanel(panel) {
-  ['pedidos','precios','historial','config','seguridad'].forEach(p => {
+  ['pedidos','precios','historial','resenas','config','seguridad'].forEach(p => {
     document.getElementById('admin-panel-' + p).style.display = p === panel ? 'block' : 'none';
   });
   document.getElementById('panel-title').textContent = PANEL_TITLES[panel] || panel;
@@ -2307,10 +2460,12 @@ async function showAdminPanel(panel) {
   if (panel === 'precios') renderPricesPanel();
   if (panel === 'config') renderConfigPanel();
   if (panel === 'historial') { setHistorialHoy(); loadHistorial(); }
+  if (panel === 'resenas') loadAdminReviews();
   closeSidebar();
 }
 
 async function renderPricesPanel() {
+  await loadLocalidadesAdmin();
   const { data } = await db.from('chipas_prices').select('*').order('price');
   if (data) prices = data;
   localPrices = JSON.parse(JSON.stringify(prices)); // deep copy
@@ -2881,6 +3036,290 @@ async function initAdminChatListeners() {
 
 function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+
+
+// ===== LOCALIDADES DE ENVÍO =====
+// SQL (correr una vez en Supabase):
+// CREATE TABLE IF NOT EXISTS chipas_localidades (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   nombre text NOT NULL,
+//   precio int NOT NULL DEFAULT 0,
+//   orden int DEFAULT 0,
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_localidades ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_localidades" ON chipas_localidades FOR ALL USING (true) WITH CHECK (true);
+
+let localidades = []; // [{id, nombre, precio}]
+
+// ---- CLIENT SIDE ----
+async function loadLocalidades() {
+  const { data } = await db.from('chipas_localidades').select('*').order('orden').order('nombre');
+  localidades = data || [];
+  renderLocalidadesSelect();
+}
+
+function renderLocalidadesSelect() {
+  const sel = document.getElementById('f-localidad');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Elegí tu localidad —</option>';
+  localidades.forEach(loc => {
+    const opt = document.createElement('option');
+    opt.value = loc.nombre;
+    opt.dataset.precio = loc.precio;
+    opt.textContent = loc.nombre + (loc.precio > 0 ? '  (+' + formatPrice(loc.precio) + ')' : '  (Sin recargo)');
+    sel.appendChild(opt);
+  });
+  // Restore previous selection if still valid
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  onLocalidadChange();
+}
+
+function onLocalidadChange() {
+  const sel = document.getElementById('f-localidad');
+  const preview = document.getElementById('localidad-fee-preview');
+  if (!sel || !preview) return;
+  const selected = sel.options[sel.selectedIndex];
+  if (selected && selected.value) {
+    const precio = Number(selected.dataset.precio) || 0;
+    preview.textContent = precio > 0 ? '🛵 Costo de envío: ' + formatPrice(precio) : '✅ Envío sin recargo a esta localidad';
+    preview.style.color = precio > 0 ? 'var(--orange)' : 'var(--green)';
+  } else {
+    preview.textContent = '';
+  }
+  updateCartSummary();
+}
+
+function getLocalidadFee() {
+  const sel = document.getElementById('f-localidad');
+  if (!sel || deliveryMethod !== 'domicilio') return 0;
+  const selected = sel.options[sel.selectedIndex];
+  if (!selected || !selected.value) return 0;
+  return Number(selected.dataset.precio) || 0;
+}
+
+// ---- ADMIN SIDE ----
+let localLocalidades = [];
+
+async function loadLocalidadesAdmin() {
+  const { data } = await db.from('chipas_localidades').select('*').order('orden').order('nombre');
+  localLocalidades = data ? JSON.parse(JSON.stringify(data)) : [];
+  buildLocalidadesUI();
+}
+
+function buildLocalidadesUI() {
+  const list = document.getElementById('localidades-list');
+  if (!list) return;
+  if (!localLocalidades.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px 0">Sin localidades. Agregá una para activar los precios por zona.</div>';
+    return;
+  }
+  list.innerHTML = localLocalidades.map((loc, idx) => `
+    <div class="localidad-row">
+      <input type="text" id="loc-nombre-${idx}" value="${loc.nombre}" placeholder="Ej: Morón" />
+      <span class="loc-sep">$</span>
+      <input type="number" id="loc-precio-${idx}" value="${loc.precio}" min="0" step="100" placeholder="0" />
+      <button class="btn-del-loc" onclick="deleteLocalidadRow(${idx})" title="Eliminar">✕</button>
+    </div>`).join('');
+}
+
+function addLocalidadRow() {
+  localLocalidades.push({ id: 'new-' + Date.now(), nombre: '', precio: 0 });
+  buildLocalidadesUI();
+  // Focus last name input
+  setTimeout(() => {
+    const idx = localLocalidades.length - 1;
+    document.getElementById('loc-nombre-' + idx)?.focus();
+  }, 50);
+}
+
+function deleteLocalidadRow(idx) {
+  localLocalidades.splice(idx, 1);
+  buildLocalidadesUI();
+}
+
+async function saveLocalidades() {
+  // Read current UI values
+  localLocalidades = localLocalidades.map((loc, idx) => ({
+    ...loc,
+    nombre: (document.getElementById('loc-nombre-' + idx)?.value || '').trim(),
+    precio: parseInt(document.getElementById('loc-precio-' + idx)?.value || 0) || 0,
+    orden: idx
+  })).filter(loc => loc.nombre);
+
+  if (!localLocalidades.length) {
+    // Delete all
+    await db.from('chipas_localidades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    localidades = [];
+    buildLocalidadesUI();
+    showToast('🗑 Localidades eliminadas');
+    return;
+  }
+
+  // Upsert all
+  const toUpsert = localLocalidades.map(loc => ({
+    ...(String(loc.id).startsWith('new-') ? {} : { id: loc.id }),
+    nombre: loc.nombre,
+    precio: loc.precio,
+    orden: loc.orden
+  }));
+
+  const oldIds = localLocalidades.filter(l => !String(l.id).startsWith('new-')).map(l => l.id);
+  // Delete rows no longer in list
+  if (oldIds.length > 0) {
+    await db.from('chipas_localidades').delete().not('id', 'in', '(' + oldIds.map(i => '"' + i + '"').join(',') + ')');
+  } else {
+    await db.from('chipas_localidades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  }
+
+  for (const row of toUpsert) {
+    if (row.id) {
+      await db.from('chipas_localidades').update({ nombre: row.nombre, precio: row.precio, orden: row.orden }).eq('id', row.id);
+    } else {
+      const { data } = await db.from('chipas_localidades').insert({ nombre: row.nombre, precio: row.precio, orden: row.orden }).select().single();
+      if (data) {
+        const loc = localLocalidades.find(l => l.nombre === row.nombre && String(l.id).startsWith('new-'));
+        if (loc) loc.id = data.id;
+      }
+    }
+  }
+
+  // Refresh
+  const { data } = await db.from('chipas_localidades').select('*').order('orden').order('nombre');
+  localidades = data || [];
+  localLocalidades = JSON.parse(JSON.stringify(localidades));
+  buildLocalidadesUI();
+  renderLocalidadesSelect();
+  showToast('✅ Localidades guardadas');
+}
+
+// ===== RESEÑAS =====
+// SQL para correr una vez en Supabase:
+// CREATE TABLE IF NOT EXISTS chipas_reviews (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   order_id text NOT NULL,
+//   nombre text,
+//   stars int NOT NULL CHECK (stars >= 1 AND stars <= 5),
+//   comment text,
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_reviews ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_reviews" ON chipas_reviews FOR ALL USING (true) WITH CHECK (true);
+
+let selectedStars = 0;
+let reviewOrderId = null;
+let reviewAlreadySent = false;
+
+function selectStar(val) {
+  selectedStars = val;
+  document.querySelectorAll('#star-selector .star').forEach((el, idx) => {
+    el.classList.toggle('active', idx < val);
+  });
+}
+
+function showReviewSection(orderId) {
+  const sec = document.getElementById('review-section');
+  if (!sec || reviewAlreadySent) return;
+  // Check if already reviewed
+  const key = 'chipas_reviewed_' + orderId;
+  if (localStorage.getItem(key)) {
+    // Already sent, show thanks quietly
+    return;
+  }
+  reviewOrderId = orderId;
+  sec.style.display = 'block';
+  sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function submitReview() {
+  if (!selectedStars) { showToast('⭐ Elegí una puntuación primero'); return; }
+  const btn = document.getElementById('btn-send-review');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const comment = document.getElementById('review-comment').value.trim();
+  // Get name from order
+  let nombre = '';
+  if (reviewOrderId) {
+    const { data } = await db.from('chipas_orders').select('nombre').eq('id', reviewOrderId).single();
+    if (data) nombre = data.nombre;
+  }
+
+  const { error } = await db.from('chipas_reviews').insert({
+    order_id: reviewOrderId || 'sin_orden',
+    nombre,
+    stars: selectedStars,
+    comment: comment || null,
+    created_at: new Date().toISOString()
+  });
+
+  if (error) {
+    showToast('❌ No se pudo enviar la reseña');
+    btn.disabled = false; btn.textContent = 'Enviar reseña ✨';
+    return;
+  }
+
+  if (reviewOrderId) localStorage.setItem('chipas_reviewed_' + reviewOrderId, '1');
+  reviewAlreadySent = true;
+  document.getElementById('btn-send-review').style.display = 'none';
+  document.getElementById('review-comment').style.display = 'none';
+  document.getElementById('star-selector').style.pointerEvents = 'none';
+  document.getElementById('review-sent-msg').style.display = 'block';
+  showToast('💛 ¡Gracias por tu reseña!');
+}
+
+// ---- Admin: Pestaña Reseñas ----
+async function loadAdminReviews() {
+  const { data, error } = await db.from('chipas_reviews').select('*').order('created_at', { ascending: false });
+  const list = document.getElementById('reviews-list');
+  if (!list) return;
+
+  if (error || !data || !data.length) {
+    list.innerHTML = '<div class="reviews-empty">😶 Sin reseñas todavía. ¡Las reseñas de los clientes aparecerán acá!</div>';
+    document.getElementById('rev-total').textContent = '0';
+    document.getElementById('rev-avg').textContent = '—';
+    document.getElementById('rev-five').textContent = '0';
+    document.getElementById('reviews-avg-num').textContent = '—';
+    document.getElementById('reviews-avg-stars').textContent = '';
+    document.getElementById('reviews-avg-label').textContent = 'Sin reseñas aún';
+    return;
+  }
+
+  const total = data.length;
+  const avg = data.reduce((s, r) => s + r.stars, 0) / total;
+  const fiveStars = data.filter(r => r.stars === 5).length;
+  const avgRound = Math.round(avg * 10) / 10;
+
+  document.getElementById('rev-total').textContent = total;
+  document.getElementById('rev-avg').textContent = avgRound.toFixed(1);
+  document.getElementById('rev-five').textContent = fiveStars;
+  document.getElementById('reviews-avg-num').textContent = avgRound.toFixed(1);
+  document.getElementById('reviews-avg-stars').textContent = renderStarsText(avg);
+  document.getElementById('reviews-avg-label').textContent = `Basado en ${total} reseña${total !== 1 ? 's' : ''}`;
+
+  list.innerHTML = data.map(r => {
+    const fecha = new Date(r.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const hora = new Date(r.created_at).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+    return `<div class="review-card">
+      <div class="review-card-header">
+        <div class="review-card-name">${escapeHtml(r.nombre || 'Cliente anónimo')}</div>
+        <div class="review-card-stars">${'⭐'.repeat(r.stars)}</div>
+      </div>
+      <div class="review-card-date">${fecha} ${hora} · Pedido: ${r.order_id}</div>
+      ${r.comment
+        ? `<div class="review-card-comment">"${escapeHtml(r.comment)}"</div>`
+        : `<div class="review-card-no-comment">Sin comentario</div>`}
+    </div>`;
+  }).join('');
+}
+
+function renderStarsText(avg) {
+  const full = Math.floor(avg);
+  const half = avg - full >= 0.5 ? 1 : 0;
+  const empty = 5 - full - half;
+  return '⭐'.repeat(full) + (half ? '✨' : '') + '☆'.repeat(empty);
 }
 
 // START
