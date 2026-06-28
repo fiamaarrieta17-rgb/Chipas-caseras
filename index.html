@@ -825,9 +825,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   <span class="chat-badge" id="chat-fab-badge">0</span>
 </button>
 
-<!-- DEBUG PANEL (temporal, para diagnosticar realtime desde el celular) -->
-<button id="debug-toggle" onclick="document.getElementById('debug-panel').style.display = document.getElementById('debug-panel').style.display === 'none' ? 'block' : 'none';" style="position:fixed; bottom:24px; left:14px; z-index:9999; width:40px; height:40px; border-radius:50%; background:#222; color:#0f0; border:none; font-size:16px;">🐞</button>
-<div id="debug-panel" style="display:none; position:fixed; bottom:70px; left:14px; right:14px; max-height:220px; overflow-y:auto; background:rgba(0,0,0,0.92); color:#0f0; font-size:11px; font-family:monospace; padding:10px; border-radius:10px; z-index:9999; white-space:pre-wrap;"></div>
 
 <!-- CHAT MODAL (cliente) -->
 <div class="chat-modal-overlay" id="chat-modal-overlay" onclick="handleChatOverlayClick(event)">
@@ -2529,17 +2526,6 @@ function desactivarModoEncargo() {
 // ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_closed boolean DEFAULT false;
 // ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_closed_by text DEFAULT null;
 // ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS chat_accepted_at timestamptz DEFAULT null;
-function debugLog(...args) {
-  console.log(...args);
-  const panel = document.getElementById('debug-panel');
-  if (!panel) return;
-  const line = document.createElement('div');
-  const time = new Date().toLocaleTimeString('es-AR');
-  line.textContent = '[' + time + '] ' + args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a)).join(' ');
-  panel.appendChild(line);
-  panel.scrollTop = panel.scrollHeight;
-}
-
 let chatChannel = null;
 let chatMessages = [];
 let chatIsClosed = false;
@@ -2663,7 +2649,6 @@ function subscribeClientChat() {
   chatChannel = db.channel('chat-client-' + myOrderId)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats',
         filter: 'order_id=eq.' + myOrderId }, (payload) => {
-      debugLog('[chat-client] INSERT recibido', payload.new ? payload.new.sender : payload);
       if (payload.new) {
         chatMessages.push(payload.new);
         if (document.getElementById('chat-modal-overlay').classList.contains('open')) {
@@ -2689,9 +2674,7 @@ function subscribeClientChat() {
         showToast(msg);
       }
     })
-    .subscribe((status, err) => {
-      debugLog('[chat-client]', myOrderId, status, err || '');
-    });
+    .subscribe();
 }
 
 async function clientCloseChat() {
@@ -2846,9 +2829,7 @@ function subscribeAdminChat(orderId) {
         loadAdminChatMessages(orderId);
       }
     })
-    .subscribe((status, err) => {
-      debugLog('[chat-admin]', orderId, status, err || '');
-    });
+    .subscribe();
 }
 
 async function sendAdminMessage(orderId) {
@@ -2886,7 +2867,6 @@ async function adminCloseChat(orderId) {
 async function initAdminChatListeners() {
   db.channel('chat-admin-global')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_chats' }, (payload) => {
-      debugLog('[chat-admin-global] INSERT recibido', payload.new ? payload.new.sender + ' / order ' + payload.new.order_id : payload);
       if (!payload.new || payload.new.sender !== 'client') return;
       const orderId = payload.new.order_id;
       if (!adminOpenChats.has(orderId)) {
@@ -2896,9 +2876,7 @@ async function initAdminChatListeners() {
         renderAdminOrders();
       }
     })
-    .subscribe((status, err) => {
-      debugLog('[chat-admin-global]', status, err || '');
-    });
+    .subscribe();
 }
 
 function escapeHtml(str) {
