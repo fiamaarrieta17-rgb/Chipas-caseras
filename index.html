@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chipas Premium</title>
+<title>Mi Negocio</title>
 <link rel="manifest" id="pwa-manifest" href="manifest.json">
 <meta name="theme-color" content="#3d1f0a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -61,6 +61,22 @@ button, input, textarea { font-family: inherit; }
 .historial-table td:last-child { font-weight: 700; color: var(--gold); text-align: right; }
 .historial-table td:first-child { color: var(--muted); font-size: 12px; }
 .historial-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+
+/* ===== STORE QUICK TOGGLE (pedidos) ===== */
+.store-quick-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 10px 14px; margin-bottom: 14px; gap: 10px; flex-wrap: wrap;
+}
+#store-quick-label { font-size: 13px; font-weight: 600; color: var(--navy); white-space: nowrap; }
+.store-quick-btns { display: flex; gap: 6px; }
+.store-quick-btn {
+  padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+  background: var(--cream); font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: inherit; color: var(--muted); transition: all 0.15s; white-space: nowrap;
+}
+.store-quick-btn:hover { border-color: var(--gold); color: var(--text); }
+.store-quick-btn.active { border-color: var(--gold); background: var(--gold); color: #fff; }
 
 /* ===== CHAT ===== */
 #chat-fab {
@@ -873,6 +889,17 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
         <!-- PEDIDOS -->
         <div id="admin-panel-pedidos">
+
+          <!-- Toggle compacto abrir/cerrar tienda -->
+          <div class="store-quick-toggle" id="store-quick-toggle">
+            <span id="store-quick-label">🟢 Tienda abierta</span>
+            <div class="store-quick-btns">
+              <button class="store-quick-btn" data-mode="forzar_abierto" onclick="setStoreMode('forzar_abierto')">🟢 Abrir</button>
+              <button class="store-quick-btn" data-mode="auto" onclick="setStoreMode('auto')">🤖 Auto</button>
+              <button class="store-quick-btn" data-mode="forzar_cerrado" onclick="setStoreMode('forzar_cerrado')">🔴 Cerrar</button>
+            </div>
+          </div>
+
           <div class="new-order-alert" id="new-order-alert">
             <div class="alert-icon">🔔</div>
             <div class="alert-text">
@@ -893,6 +920,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
             <div class="tab" onclick="filterOrders('aceptado',this)">Aceptados <span class="cnt" id="cnt-acep">0</span></div>
             <div class="tab" onclick="filterOrders('en_camino',this)">En camino <span class="cnt" id="cnt-cam">0</span></div>
             <div class="tab" onclick="filterOrders('entregado',this)">Entregados <span class="cnt" id="cnt-ent">0</span></div>
+            <div class="tab" onclick="filterOrders('encargos',this)">📝 Encargos <span class="cnt" id="cnt-enc">0</span></div>
           </div>
           <div class="orders-list" id="orders-list"></div>
         </div>
@@ -957,11 +985,8 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
               <div class="hint">Lo generás desde la app: Cobrar → Con un link o QR.</div>
             </div>
           </div>
-          <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
-        </div>
-
-        <!-- HORARIO -->
-        <div class="config-card" style="max-width:480px">
+          <!-- HORARIO (dentro de config) -->
+          <div class="config-card" style="max-width:480px;margin-top:0">
           <h2>🕐 Horario de atención</h2>
           <div class="config-intro">"Automático" abre y cierra solo según el horario. Las opciones de forzado pisan el horario hasta que las cambies de nuevo.</div>
           <div class="store-mode-group" id="store-mode-group">
@@ -983,7 +1008,8 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
             </div>
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
-        </div>
+          </div><!-- /config-card horario -->
+        </div><!-- /admin-panel-config -->
 
         <!-- SEGURIDAD -->
 
@@ -1208,7 +1234,7 @@ let currentFilter = 'todos';
 let openCards = new Set();
 
 const DEFAULT_SETTINGS = {
-  business_name: 'Chipas Premium',
+  business_name: 'Mi Negocio',
   tagline: '✦ El sabor de lo casero en tu freezer ✦',
   subtitle: 'Congeladas · Receta Casera',
   payment_alias: '',
@@ -1340,14 +1366,24 @@ function getStoreMode() {
 }
 function renderStoreModeUI() {
   const mode = getStoreMode();
-  document.querySelectorAll('.store-mode-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.mode === mode);
+  document.querySelectorAll(".store-mode-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
   });
-  const label = document.getElementById('store-status-label');
-  if (!label) return;
-  if (mode === 'forzar_abierto') label.textContent = '🟢 Tienda abierta (forzado, ignora el horario)';
-  else if (mode === 'forzar_cerrado') label.textContent = '🔴 Tienda cerrada (forzado, ignora el horario)';
-  else label.textContent = isStoreOpenNow() ? '🟢 Tienda abierta (según horario)' : '🟡 Cerrada (fuera de horario)';
+  document.querySelectorAll(".store-quick-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+  const label = document.getElementById("store-status-label");
+  if (label) {
+    if (mode === "forzar_abierto") label.textContent = "🟢 Tienda abierta (forzado, ignora el horario)";
+    else if (mode === "forzar_cerrado") label.textContent = "🔴 Tienda cerrada (forzado, ignora el horario)";
+    else label.textContent = isStoreOpenNow() ? "🟢 Tienda abierta (según horario)" : "🟡 Cerrada (fuera de horario)";
+  }
+  const quickLabel = document.getElementById("store-quick-label");
+  if (quickLabel) {
+    if (mode === "forzar_abierto") quickLabel.textContent = "🟢 Tienda abierta";
+    else if (mode === "forzar_cerrado") quickLabel.textContent = "🔴 Tienda cerrada";
+    else quickLabel.textContent = isStoreOpenNow() ? "🟢 Abierta (auto)" : "🟡 Cerrada (auto)";
+  }
 }
 function previewDeliveryFee() {
   // Just a no-op hook in case we want live feedback later; value is read on save.
@@ -2089,13 +2125,18 @@ function renderAdminOrders() {
 
   const counts = { pendiente:0, aceptado:0, en_camino:0, entregado:0 };
   activeOrders.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
+  const encargosCount = activeOrders.filter(o => o.is_encargo).length;
   document.getElementById('cnt-todos').textContent = activeOrders.length;
   document.getElementById('cnt-pend').textContent = counts.pendiente;
   document.getElementById('cnt-acep').textContent = counts.aceptado;
   document.getElementById('cnt-cam').textContent = counts.en_camino;
   document.getElementById('cnt-ent').textContent = counts.entregado;
+  document.getElementById('cnt-enc').textContent = encargosCount;
 
-  const filtered = (currentFilter === 'todos' ? adminOrders : adminOrders.filter(o => o.status === currentFilter)).filter(o => !o.archivado);
+  let filtered;
+  if (currentFilter === 'todos') filtered = adminOrders.filter(o => !o.archivado);
+  else if (currentFilter === 'encargos') filtered = adminOrders.filter(o => !o.archivado && o.is_encargo);
+  else filtered = adminOrders.filter(o => !o.archivado && o.status === currentFilter);
   const list = document.getElementById('orders-list');
 
   if (!filtered.length) {
@@ -2617,6 +2658,7 @@ function subscribeClientChat() {
           badge.textContent = current;
           badge.classList.add('show');
           showToast('💬 Nuevo mensaje del vendedor');
+          sendBrowserNotification('💬 Mensaje del vendedor', payload.new.message.substring(0, 60), 'chat-admin-' + myOrderId);
         }
       }
     })
@@ -2763,6 +2805,8 @@ function subscribeAdminChat(orderId) {
         if (adminOpenChats.has(orderId)) {
           const { data } = await db.from('chipas_chats').select('*').eq('order_id', orderId).order('created_at');
           renderAdminChatMessages(orderId, data || [], false, null);
+          playNotificationSound();
+          sendBrowserNotification('💬 Mensaje de cliente', payload.new.message.substring(0, 60), 'chat-' + orderId);
         } else {
           adminUnreadChats[orderId] = (adminUnreadChats[orderId] || 0) + 1;
           playNotificationSound();
