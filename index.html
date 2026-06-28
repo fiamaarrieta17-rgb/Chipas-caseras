@@ -126,6 +126,20 @@ button, input, textarea { font-family: inherit; }
 .btn-send-review:hover { background: #b8832e; }
 .btn-send-review:disabled { background: #ccc; cursor: not-allowed; }
 .review-sent-msg { text-align: center; padding: 12px; color: var(--green); font-weight: 700; font-size: 14px; display: none; }
+.btn-skip-review {
+  width: 100%; padding: 10px; background: none; border: none;
+  font-size: 12px; color: var(--muted); cursor: pointer;
+  font-family: inherit; margin-top: 4px; text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.btn-skip-review:hover { color: var(--red); }
+.btn-delete-review {
+  background: none; border: none; color: var(--muted); font-size: 12px;
+  cursor: pointer; font-family: inherit; padding: 4px 6px;
+  border-radius: 6px; transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.btn-delete-review:hover { background: #fdecea; color: var(--red); }
 
 /* Admin reseñas panel */
 .reviews-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
@@ -713,6 +727,167 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; }
 .overlay.show { display: block; }
 .time-ago { font-size: 10px; color: var(--muted); }
+
+/* ===== REPARTIDOR ===== */
+#view-repartidor { display: none; }
+#rep-loader {
+  position: fixed; inset: 0; background: var(--navy);
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  z-index: 9999; transition: opacity 0.3s;
+}
+#rep-loader h2 { font-size: 20px; color: #fff; font-weight: 800; }
+#rep-loader h2 span { color: var(--gold); }
+#view-rep-login {
+  min-height: 100vh;
+  background: linear-gradient(155deg, #1f3050 0%, var(--navy) 60%, #14213c 100%);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.rep-login-box {
+  background: #fff; border-radius: 20px; padding: 32px 26px;
+  max-width: 340px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+.rep-login-icon { font-size: 40px; text-align: center; margin-bottom: 10px; }
+.rep-login-title { font-size: 22px; font-weight: 800; color: var(--navy); text-align: center; margin-bottom: 4px; }
+.rep-login-title span { color: var(--gold); }
+.rep-login-sub { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+.rep-form-group { margin-bottom: 14px; }
+.rep-form-group label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.rep-form-group input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 15px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+  transition: border-color 0.2s;
+}
+.rep-form-group input:focus { border-color: var(--gold); background: #fff; }
+.rep-login-error { color: var(--red); font-size: 12px; text-align: center; margin-bottom: 10px; display: none; }
+.rep-login-error.show { display: block; }
+.btn-rep-login {
+  width: 100%; padding: 14px; background: var(--gold); color: #fff;
+  border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.btn-rep-login:hover { background: #b8832e; }
+.rep-header {
+  background: linear-gradient(155deg, #1f3050 0%, var(--navy) 60%, #14213c 100%);
+  padding: 16px 18px 14px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+}
+.rep-header-top { display: flex; align-items: center; justify-content: space-between; }
+.rep-header h1 { font-size: 18px; font-weight: 800; color: #fff; line-height: 1.2; }
+.rep-header h1 span { color: var(--gold); }
+.rep-header-sub { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; letter-spacing: 0.5px; }
+.btn-rep-logout {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7); border-radius: 8px; padding: 6px 10px;
+  font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-rep-logout:hover { background: rgba(255,255,255,0.18); }
+.btn-rep-refresh {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.8); border-radius: 8px; padding: 5px 8px;
+  font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit;
+}
+.btn-rep-refresh:hover { background: rgba(255,255,255,0.2); }
+.rep-live-bar {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.rep-live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #4caf50;
+  animation: pulse 1.8s ease-in-out infinite; flex-shrink: 0;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(0.8)} }
+.rep-live-label { font-size: 11px; color: rgba(255,255,255,0.6); }
+.rep-live-count { margin-left: auto; font-size: 11px; color: var(--gold-light); font-weight: 700; }
+.rep-container { max-width: 500px; margin: 0 auto; padding: 16px 14px; }
+.rep-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.rep-stat-pill { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 8px; text-align: center; }
+.rep-stat-pill-val { font-size: 22px; font-weight: 800; color: var(--gold); line-height: 1; }
+.rep-stat-pill-label { font-size: 10px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+.rep-group-toggle { display: flex; background: var(--cream2); border-radius: 10px; padding: 3px; margin-bottom: 14px; }
+.rep-group-btn {
+  flex: 1; text-align: center; padding: 8px 6px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  border-radius: 8px; border: none; background: transparent;
+  font-family: inherit; transition: all 0.15s; cursor: pointer;
+}
+.rep-group-btn.active { background: var(--navy); color: #fff; }
+.rep-orders-list { display: flex; flex-direction: column; gap: 10px; }
+.rep-order-card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 16px;
+  overflow: hidden; transition: box-shadow 0.2s; touch-action: pan-y;
+}
+.rep-order-card.dragging { opacity: 0.5; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.rep-order-card.drag-over { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,147,58,0.3); }
+.rep-order-card.status-en_camino { border-color: var(--blue); background: #f0f6ff; }
+.rep-order-card.status-entregado { border-color: var(--green); background: #f0faf4; opacity: 0.75; }
+.rep-drag-handle {
+  width: 36px; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  flex-shrink: 0; padding: 16px 0; cursor: grab; touch-action: none; color: var(--border);
+}
+.rep-drag-handle:active { cursor: grabbing; }
+.rep-drag-handle span { display: block; width: 18px; height: 2px; background: currentColor; border-radius: 2px; }
+.rep-card-inner { display: flex; align-items: stretch; }
+.rep-card-body { flex: 1; padding: 14px 14px 14px 0; min-width: 0; }
+.rep-pos-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--navy); color: #fff;
+  font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-bottom: 8px;
+}
+.rep-order-card.status-en_camino .rep-pos-badge { background: var(--blue); }
+.rep-order-card.status-entregado .rep-pos-badge { background: var(--green); }
+.rep-card-name { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+.rep-card-locality {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: var(--gold);
+  background: rgba(201,147,58,0.1); border-radius: 6px;
+  padding: 2px 7px; margin-bottom: 6px;
+}
+.rep-card-address { font-size: 12px; color: var(--muted); margin-bottom: 6px; line-height: 1.4; }
+.rep-card-phone { font-size: 12px; color: var(--blue); font-weight: 600; }
+.rep-card-phone a { color: inherit; text-decoration: none; }
+.rep-card-items { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+.rep-card-total { font-size: 13px; font-weight: 800; color: var(--gold); margin-top: 4px; }
+.rep-pay-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 2px 7px; margin-top: 4px; }
+.rep-pay-transferencia { background: #d4edda; color: var(--green); }
+.rep-pay-efectivo { background: #fff3cd; color: #856404; }
+.rep-pay-pending { background: #f8d7da; color: var(--red); }
+.rep-status-strip { height: 4px; width: 100%; background: var(--border); }
+.rep-status-strip.en_camino { background: var(--blue); }
+.rep-status-strip.entregado { background: var(--green); }
+.rep-card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.rep-btn-action {
+  padding: 9px 14px; border: none; border-radius: 10px;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  display: flex; align-items: center; gap: 5px; white-space: nowrap; cursor: pointer;
+}
+.rep-btn-dispatch { background: var(--blue); color: #fff; }
+.rep-btn-dispatch:hover { background: #155a9a; }
+.rep-btn-deliver { background: var(--green); color: #fff; }
+.rep-btn-deliver:hover { background: #256040; }
+.rep-btn-whatsapp { background: #25d366; color: #fff; }
+.rep-btn-whatsapp:hover { background: #1da851; }
+.rep-btn-maps { background: var(--navy); color: #fff; }
+.rep-btn-maps:hover { background: #142038; }
+.rep-delivered-check { color: var(--green); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+.rep-loc-group-header {
+  background: var(--navy); color: #fff;
+  padding: 8px 14px; border-radius: 10px;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; margin-top: 12px;
+}
+.rep-loc-group-header:first-of-type { margin-top: 0; }
+.rep-loc-group-count { background: var(--gold); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; }
+.rep-empty-state { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 14px; }
+.rep-empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.rep-empty-state h3 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -804,7 +979,10 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
     <!-- RESEÑA (aparece solo cuando el pedido fue entregado) -->
     <div class="review-section" id="review-section">
-      <h3>⭐ ¿Cómo estuvo tu pedido?</h3>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <h3 style="margin-bottom:0">⭐ ¿Cómo estuvo tu pedido?</h3>
+        <button onclick="skipReview()" title="Cerrar" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0;flex-shrink:0">✕</button>
+      </div>
       <p>Tu opinión nos ayuda a mejorar. ¡Gracias por tomarte un minuto!</p>
       <div class="star-selector" id="star-selector">
         <span class="star" data-val="1" onclick="selectStar(1)">⭐</span>
@@ -815,6 +993,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
       <textarea class="review-textarea" id="review-comment" placeholder="¿Querés dejar un comentario? (opcional)"></textarea>
       <button class="btn-send-review" id="btn-send-review" onclick="submitReview()">Enviar reseña ✨</button>
+      <button class="btn-skip-review" onclick="skipReview()">No quiero dejar reseña</button>
       <div class="review-sent-msg" id="review-sent-msg">💛 ¡Muchas gracias por tu reseña!</div>
     </div>
     <div class="section-title">Elegí tu pedido</div>
@@ -1138,6 +1317,18 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
           </div><!-- /config-card horario -->
+          <!-- PIN REPARTIDOR -->
+          <div class="config-card" style="max-width:480px;margin-top:0">
+            <h2>🛵 Acceso repartidor</h2>
+            <div class="config-intro">El repartidor entra con este PIN a su panel exclusivo (<code>repartidor.html</code>). Cambialo cuando quieras.</div>
+            <div class="form-group">
+              <label>PIN REPARTIDOR</label>
+              <input type="text" id="cfg-rep-pin" placeholder="Ej: 5678" maxlength="8" inputmode="numeric" />
+              <div class="hint">Solo números. Por defecto es 1234.</div>
+            </div>
+            <button class="btn-save-prices" onclick="saveRepPin()">💾 Guardar PIN</button>
+          </div>
+
         </div><!-- /admin-panel-config -->
 
         <!-- SEGURIDAD -->
@@ -1232,6 +1423,73 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   </div>
 </div>
 
+<!-- ===================== REPARTIDOR ===================== -->
+<div id="view-repartidor" style="display:none">
+  <div id="rep-loader">
+    <h2>🛵 <span>Repartidor</span></h2>
+    <div class="spinner"></div>
+  </div>
+
+  <div id="view-rep-login" style="display:none">
+    <div class="rep-login-box">
+      <div class="rep-login-icon">🛵</div>
+      <div class="rep-login-title">Panel <span>Repartidor</span></div>
+      <div class="rep-login-sub">Ingresá tu PIN de repartidor para continuar</div>
+      <div class="rep-form-group">
+        <label>PIN de acceso</label>
+        <input type="password" id="rep-login-pin" placeholder="••••••" inputmode="numeric" maxlength="8"
+          onkeydown="if(event.key==='Enter')repDoLogin()" />
+      </div>
+      <div class="rep-login-error" id="rep-login-error">PIN incorrecto</div>
+      <button class="btn-rep-login" onclick="repDoLogin()">Entrar &rarr;</button>
+    </div>
+  </div>
+
+  <div id="view-rep-main" style="display:none">
+    <div class="rep-header">
+      <div class="rep-header-top">
+        <div>
+          <h1>&#x1F6F5; Panel <span>Repartidor</span></h1>
+          <div class="rep-header-sub" id="rep-header-sub">Cargando pedidos...</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn-rep-refresh" onclick="repLoadOrders()" title="Actualizar">&#x1F504;</button>
+          <button class="btn-rep-logout" onclick="repDoLogout()">Salir</button>
+        </div>
+      </div>
+      <div class="rep-live-bar">
+        <div class="rep-live-dot"></div>
+        <span class="rep-live-label">Actualizacion en vivo</span>
+        <span class="rep-live-count" id="rep-live-count">0 pedidos</span>
+      </div>
+    </div>
+
+    <div class="rep-container">
+      <div class="rep-stats-row">
+        <div class="rep-stat-pill">
+          <div class="rep-stat-pill-val" id="rep-stat-pendientes">0</div>
+          <div class="rep-stat-pill-label">Para salir</div>
+        </div>
+        <div class="rep-stat-pill">
+          <div class="rep-stat-pill-val" id="rep-stat-camino">0</div>
+          <div class="rep-stat-pill-label">En camino</div>
+        </div>
+        <div class="rep-stat-pill">
+          <div class="rep-stat-pill-val" id="rep-stat-entregados">0</div>
+          <div class="rep-stat-pill-label">Entregados</div>
+        </div>
+      </div>
+
+      <div class="rep-group-toggle">
+        <button class="rep-group-btn active" id="rep-btn-mode-orden" onclick="repSetMode('orden')">&#x1F4CB; Mi orden</button>
+        <button class="rep-group-btn" id="rep-btn-mode-localidad" onclick="repSetMode('localidad')">&#x1F4CD; Por localidad</button>
+      </div>
+
+      <div id="rep-orders-container"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1243,11 +1501,19 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 
 // ===== DETECT VIEW =====
 const isAdmin = window.location.search.includes('admin');
+const isRepartidor = window.location.search.includes('repartidor');
 // Cargar manifest correcto según rol
 (function() {
   const el = document.getElementById('pwa-manifest');
   if (el && isAdmin) el.setAttribute('href', 'manifest-admin.json');
+  if (el && isRepartidor) el.setAttribute('href', 'manifest-repartidor.json');
 })();
+
+// ===== REPARTIDOR MODE: mount view and skip main app init =====
+if (isRepartidor) {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('view-repartidor').style.display = 'block';
+}
 
 // ===== AUTH =====
 const DEFAULT_PASSWORD = 'chipas2026';
@@ -1507,6 +1773,8 @@ function renderConfigPanel() {
   document.getElementById('cfg-mplink').value = settings.payment_link || '';
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
+  const repPinEl = document.getElementById('cfg-rep-pin');
+  if (repPinEl) repPinEl.value = settings.repartidor_pin || '';
   renderStoreModeUI();
   previewConfig();
 }
@@ -3213,6 +3481,9 @@ let selectedStars = 0;
 let reviewOrderId = null;
 let reviewAlreadySent = false;
 
+function reviewKey(orderId) { return 'chipas_reviewed_' + orderId; }
+function reviewSkippedKey(orderId) { return 'chipas_review_skipped_' + orderId; }
+
 function selectStar(val) {
   selectedStars = val;
   document.querySelectorAll('#star-selector .star').forEach((el, idx) => {
@@ -3223,15 +3494,22 @@ function selectStar(val) {
 function showReviewSection(orderId) {
   const sec = document.getElementById('review-section');
   if (!sec || reviewAlreadySent) return;
-  // Check if already reviewed
-  const key = 'chipas_reviewed_' + orderId;
-  if (localStorage.getItem(key)) {
-    // Already sent, show thanks quietly
-    return;
-  }
+  // Don't show if already reviewed or deliberately skipped
+  if (localStorage.getItem(reviewKey(orderId)) || localStorage.getItem(reviewSkippedKey(orderId))) return;
   reviewOrderId = orderId;
   sec.style.display = 'block';
-  sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
+}
+
+function skipReview() {
+  if (reviewOrderId) localStorage.setItem(reviewSkippedKey(reviewOrderId), '1');
+  reviewAlreadySent = true; // prevent re-showing this session
+  const sec = document.getElementById('review-section');
+  if (sec) {
+    sec.style.transition = 'opacity 0.25s';
+    sec.style.opacity = '0';
+    setTimeout(() => { sec.style.display = 'none'; sec.style.opacity = ''; sec.style.transition = ''; }, 260);
+  }
 }
 
 async function submitReview() {
@@ -3240,7 +3518,6 @@ async function submitReview() {
   btn.disabled = true; btn.textContent = 'Enviando...';
 
   const comment = document.getElementById('review-comment').value.trim();
-  // Get name from order
   let nombre = '';
   if (reviewOrderId) {
     const { data } = await db.from('chipas_orders').select('nombre').eq('id', reviewOrderId).single();
@@ -3261,10 +3538,16 @@ async function submitReview() {
     return;
   }
 
-  if (reviewOrderId) localStorage.setItem('chipas_reviewed_' + reviewOrderId, '1');
+  if (reviewOrderId) {
+    localStorage.setItem(reviewKey(reviewOrderId), '1');
+    // Clean up skip flag if existed
+    localStorage.removeItem(reviewSkippedKey(reviewOrderId));
+  }
   reviewAlreadySent = true;
   document.getElementById('btn-send-review').style.display = 'none';
   document.getElementById('review-comment').style.display = 'none';
+  const skipBtn = document.querySelector('.btn-skip-review');
+  if (skipBtn) skipBtn.style.display = 'none';
   document.getElementById('star-selector').style.pointerEvents = 'none';
   document.getElementById('review-sent-msg').style.display = 'block';
   showToast('💛 ¡Gracias por tu reseña!');
@@ -3302,10 +3585,13 @@ async function loadAdminReviews() {
   list.innerHTML = data.map(r => {
     const fecha = new Date(r.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
     const hora = new Date(r.created_at).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    return `<div class="review-card">
+    return `<div class="review-card" id="review-card-${r.id}">
       <div class="review-card-header">
         <div class="review-card-name">${escapeHtml(r.nombre || 'Cliente anónimo')}</div>
-        <div class="review-card-stars">${'⭐'.repeat(r.stars)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="review-card-stars">${'⭐'.repeat(r.stars)}</div>
+          <button class="btn-delete-review" onclick="deleteReview('${r.id}')" title="Borrar reseña">🗑</button>
+        </div>
       </div>
       <div class="review-card-date">${fecha} ${hora} · Pedido: ${r.order_id}</div>
       ${r.comment
@@ -3315,6 +3601,23 @@ async function loadAdminReviews() {
   }).join('');
 }
 
+async function deleteReview(id) {
+  if (!confirm('¿Borrar esta reseña? No se puede deshacer.')) return;
+  const { error } = await db.from('chipas_reviews').delete().eq('id', id);
+  if (error) { showToast('❌ No se pudo borrar'); return; }
+  // Remove card from DOM instantly, then reload stats
+  const card = document.getElementById('review-card-' + id);
+  if (card) {
+    card.style.transition = 'opacity 0.2s, transform 0.2s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(8px)';
+    setTimeout(() => { card.remove(); loadAdminReviews(); }, 220);
+  } else {
+    loadAdminReviews();
+  }
+  showToast('🗑 Reseña borrada');
+}
+
 function renderStarsText(avg) {
   const full = Math.floor(avg);
   const half = avg - full >= 0.5 ? 1 : 0;
@@ -3322,8 +3625,370 @@ function renderStarsText(avg) {
   return '⭐'.repeat(full) + (half ? '✨' : '') + '☆'.repeat(empty);
 }
 
+
+async function saveRepPin() {
+  const pin = (document.getElementById('cfg-rep-pin')?.value || '').trim();
+  if (!pin) { showToast('Ingresá un PIN'); return; }
+  settings.repartidor_pin = pin;
+  saveLocalSettings();
+  try {
+    const { error } = await db.from('chipas_settings').upsert({ id: 'main', repartidor_pin: pin, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) throw error;
+    showToast('✅ PIN repartidor guardado');
+  } catch(e) {
+    showToast('⚠️ Guardado localmente. Error: ' + (e?.message || 'revisá chipas_settings'));
+  }
+}
+
 // START
-init();
+if (!isRepartidor) {
+  init();
+} else {
+  repInit();
+}
+
+// ============================================================
+// ===== REPARTIDOR LOGIC =====================================
+// ============================================================
+
+let repOrders = [];
+let repSortOrder = [];
+let repViewMode = 'orden';
+let repDragSrcIdx = null;
+let repSubscription = null;
+
+const REP_PIN_STORAGE_KEY = 'chipas_rep_unlocked';
+
+function repHideLoader() {
+  const l = document.getElementById('rep-loader');
+  if (!l) return;
+  l.style.opacity = '0';
+  setTimeout(() => l.style.display = 'none', 300);
+}
+
+async function repInit() {
+  const unlocked = sessionStorage.getItem(REP_PIN_STORAGE_KEY);
+  if (unlocked === '1') {
+    repShowMain();
+  } else {
+    repHideLoader();
+    document.getElementById('view-rep-login').style.display = 'flex';
+  }
+}
+
+async function repDoLogin() {
+  const pin = document.getElementById('rep-login-pin').value.trim();
+  let correctPin = '1234';
+  try {
+    const { data } = await db.from('chipas_settings').select('repartidor_pin').eq('id','main').limit(1);
+    if (data && data[0] && data[0].repartidor_pin) correctPin = String(data[0].repartidor_pin);
+  } catch(e) {}
+
+  if (pin === correctPin) {
+    sessionStorage.setItem(REP_PIN_STORAGE_KEY, '1');
+    document.getElementById('rep-login-error').classList.remove('show');
+    document.getElementById('view-rep-login').style.display = 'none';
+    repShowMain();
+  } else {
+    document.getElementById('rep-login-error').classList.add('show');
+    document.getElementById('rep-login-pin').value = '';
+  }
+}
+
+function repDoLogout() {
+  sessionStorage.removeItem(REP_PIN_STORAGE_KEY);
+  if (repSubscription) repSubscription.unsubscribe();
+  document.getElementById('view-rep-main').style.display = 'none';
+  document.getElementById('view-rep-login').style.display = 'flex';
+}
+
+async function repShowMain() {
+  document.getElementById('view-rep-login').style.display = 'none';
+  document.getElementById('view-rep-main').style.display = 'block';
+  repHideLoader();
+  await repLoadOrders();
+  repSubscribeRealtime();
+}
+
+async function repLoadOrders() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const { data, error } = await db.from('chipas_orders')
+    .select('*')
+    .in('status', ['aceptado', 'en_camino', 'entregado'])
+    .eq('entrega', 'domicilio')
+    .neq('archivado', true)
+    .gte('created_at', today.toISOString())
+    .order('created_at');
+
+  if (error) { showToast('Error al cargar pedidos'); return; }
+  repOrders = data || [];
+  repLoadSortOrder();
+  repRender();
+}
+
+function repSubscribeRealtime() {
+  if (repSubscription) repSubscription.unsubscribe();
+  repSubscription = db.channel('repartidor-orders')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chipas_orders' }, async () => {
+      await repLoadOrders();
+    })
+    .subscribe();
+}
+
+function repLoadSortOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('chipas_rep_sort') || '[]');
+    const existingIds = new Set(repOrders.map(o => o.id));
+    repSortOrder = saved.filter(id => existingIds.has(id));
+    repOrders.forEach(o => { if (!repSortOrder.includes(o.id)) repSortOrder.push(o.id); });
+  } catch(e) {
+    repSortOrder = repOrders.map(o => o.id);
+  }
+  repSaveSortOrder();
+}
+
+function repSaveSortOrder() {
+  try { localStorage.setItem('chipas_rep_sort', JSON.stringify(repSortOrder)); } catch(e) {}
+}
+
+function repGetSortedOrders() {
+  const map = Object.fromEntries(repOrders.map(o => [o.id, o]));
+  return repSortOrder.map(id => map[id]).filter(Boolean);
+}
+
+function repRender() {
+  const sorted = repGetSortedOrders();
+  const pending = sorted.filter(o => o.status === 'aceptado').length;
+  const enCamino = sorted.filter(o => o.status === 'en_camino').length;
+  const entregado = sorted.filter(o => o.status === 'entregado').length;
+
+  document.getElementById('rep-stat-pendientes').textContent = pending;
+  document.getElementById('rep-stat-camino').textContent = enCamino;
+  document.getElementById('rep-stat-entregados').textContent = entregado;
+  document.getElementById('rep-live-count').textContent = sorted.length + ' pedido' + (sorted.length !== 1 ? 's' : '');
+  document.getElementById('rep-header-sub').textContent =
+    sorted.length === 0 ? 'Sin pedidos activos' :
+    `${pending} por salir \u00B7 ${enCamino} en camino \u00B7 ${entregado} entregados`;
+
+  const container = document.getElementById('rep-orders-container');
+  if (!sorted.length) {
+    container.innerHTML = '<div class="rep-empty-state"><div class="icon">&#x1F4ED;</div><h3>Sin pedidos</h3><p>Los pedidos aceptados aparecer\u00E1n ac\u00E1</p></div>';
+    return;
+  }
+
+  if (repViewMode === 'localidad') {
+    repRenderByLocality(sorted, container);
+  } else {
+    repRenderByOrder(sorted, container);
+  }
+}
+
+function repRenderByOrder(sorted, container) {
+  container.innerHTML = '';
+  sorted.forEach((order, idx) => container.appendChild(repBuildCard(order, idx, true)));
+  repInitDragDrop();
+}
+
+function repRenderByLocality(sorted, container) {
+  const groups = {};
+  sorted.forEach(o => {
+    const loc = o.localidad || 'Sin localidad';
+    if (!groups[loc]) groups[loc] = [];
+    groups[loc].push(o);
+  });
+  container.innerHTML = '';
+  Object.entries(groups).forEach(([loc, ords]) => {
+    const header = document.createElement('div');
+    header.className = 'rep-loc-group-header';
+    header.innerHTML = `<span>&#x1F4CD; ${repEsc(loc)}</span><span class="rep-loc-group-count">${ords.length}</span>`;
+    container.appendChild(header);
+    ords.forEach((order, idx) => container.appendChild(repBuildCard(order, idx, false)));
+  });
+}
+
+function repBuildCard(order, position, showDrag) {
+  const div = document.createElement('div');
+  div.className = `rep-order-card status-${order.status}`;
+  div.dataset.id = order.id;
+  div.dataset.idx = position;
+
+  const items = (order.items || []).map(i => `${i.name} x${i.qty}`).join(', ');
+
+  let payBadge = '';
+  if (order.metodo_pago === 'efectivo') {
+    payBadge = `<span class="rep-pay-badge rep-pay-efectivo">&#x1F4B5; Efectivo al recibir</span>`;
+  } else if (order.pago_avisado) {
+    payBadge = `<span class="rep-pay-badge rep-pay-transferencia">&#x2705; Transferencia acreditada</span>`;
+  } else {
+    payBadge = `<span class="rep-pay-badge rep-pay-pending">&#x23F3; Pago pendiente</span>`;
+  }
+
+  let actions = '';
+  if (order.status === 'aceptado') {
+    actions = `
+      <button class="rep-btn-action rep-btn-dispatch" onclick="repMarkEnCamino('${order.id}')">&#x1F6F5; Salir a entregar</button>
+      <button class="rep-btn-action rep-btn-whatsapp" onclick="repOpenWhatsApp('${repEsc(order.cel)}','${repEsc(order.nombre)}')">&#x1F4AC; WhatsApp</button>
+      <button class="rep-btn-action rep-btn-maps" onclick="repOpenMaps('${repEsc(order.calle)} ${repEsc(order.altura)}, ${repEsc(order.localidad||'')}')">&#x1F4CD; Maps</button>`;
+  } else if (order.status === 'en_camino') {
+    actions = `
+      <button class="rep-btn-action rep-btn-deliver" onclick="repMarkEntregado('${order.id}')">&#x2705; Marcar entregado</button>
+      <button class="rep-btn-action rep-btn-whatsapp" onclick="repOpenWhatsApp('${repEsc(order.cel)}','${repEsc(order.nombre)}')">&#x1F4AC; WhatsApp</button>
+      <button class="rep-btn-action rep-btn-maps" onclick="repOpenMaps('${repEsc(order.calle)} ${repEsc(order.altura)}, ${repEsc(order.localidad||'')}')">&#x1F4CD; Maps</button>`;
+  } else if (order.status === 'entregado') {
+    actions = `<div class="rep-delivered-check">&#x2705; Entregado</div>`;
+  }
+
+  const dragHandle = showDrag && order.status !== 'entregado' ? `
+    <div class="rep-drag-handle" draggable="false">
+      <span></span><span></span><span></span>
+    </div>` : `<div style="width:12px"></div>`;
+
+  div.innerHTML = `
+    <div class="rep-status-strip ${order.status}"></div>
+    <div class="rep-card-inner">
+      ${dragHandle}
+      <div class="rep-card-body">
+        <div class="rep-pos-badge">${order.status === 'entregado' ? '&#x2713;' : position + 1}</div>
+        <div class="rep-card-name">${repEsc(order.nombre)}</div>
+        ${order.localidad ? `<div class="rep-card-locality">&#x1F4CD; ${repEsc(order.localidad)}</div>` : ''}
+        <div class="rep-card-address">
+          ${repEsc(order.calle || '')} ${repEsc(order.altura || '')}
+          ${order.notas ? `<br><span style="color:var(--orange)">&#x1F4DD; ${repEsc(order.notas)}</span>` : ''}
+        </div>
+        <div class="rep-card-phone"><a href="tel:${repEsc(order.cel)}">&#x1F4F1; ${repEsc(order.cel)}</a></div>
+        <div class="rep-card-items">${repEsc(items)}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <div class="rep-card-total">$${Number(order.total).toLocaleString('es-AR')}</div>
+          ${payBadge}
+        </div>
+        <div class="rep-card-actions">${actions}</div>
+      </div>
+    </div>`;
+
+  return div;
+}
+
+async function repMarkEnCamino(orderId) {
+  const { error } = await db.from('chipas_orders').update({ status: 'en_camino', updated_at: new Date().toISOString() }).eq('id', orderId);
+  if (error) { showToast('Error al actualizar'); return; }
+  const sorted = repGetSortedOrders();
+  const idx = sorted.findIndex(o => o.id === orderId);
+  const nextAceptado = sorted.slice(idx + 1).find(o => o.status === 'aceptado');
+  showToast('Saliendo a entregar!');
+  if (nextAceptado) showToast(`Siguiente: ${nextAceptado.nombre} en ${nextAceptado.localidad || 'sin localidad'}`);
+}
+
+async function repMarkEntregado(orderId) {
+  const { error } = await db.from('chipas_orders').update({ status: 'entregado', updated_at: new Date().toISOString() }).eq('id', orderId);
+  if (error) { showToast('Error al actualizar'); return; }
+  await repLoadOrders();
+  const sorted = repGetSortedOrders();
+  const nextAceptado = sorted.find(o => o.status === 'aceptado');
+  showToast('Entregado!');
+  if (nextAceptado) {
+    const confirmed = confirm(`Empezar a entregar el siguiente pedido?\n ${nextAceptado.nombre}\n ${nextAceptado.calle} ${nextAceptado.altura}, ${nextAceptado.localidad || ''}`);
+    if (confirmed) await repMarkEnCamino(nextAceptado.id);
+  } else {
+    showToast('Terminaste todos los pedidos!');
+  }
+}
+
+function repOpenWhatsApp(cel, nombre) {
+  const num = cel.replace(/\D/g, '');
+  const intl = num.startsWith('54') ? num : '54' + num;
+  const msg = encodeURIComponent(`Hola ${nombre}, soy el repartidor. Ya estoy en camino con tu pedido`);
+  window.open(`https://wa.me/${intl}?text=${msg}`, '_blank');
+}
+
+function repOpenMaps(address) {
+  window.open(`https://maps.google.com/?q=${encodeURIComponent(address + ', Argentina')}`, '_blank');
+}
+
+function repSetMode(mode) {
+  repViewMode = mode;
+  document.getElementById('rep-btn-mode-orden').classList.toggle('active', mode === 'orden');
+  document.getElementById('rep-btn-mode-localidad').classList.toggle('active', mode === 'localidad');
+  repRender();
+}
+
+function repEsc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function repInitDragDrop() {
+  const cards = document.querySelectorAll('.rep-order-card:not(.status-entregado)');
+  cards.forEach(card => {
+    const handle = card.querySelector('.rep-drag-handle');
+    if (!handle) return;
+    let startY, startIdx;
+
+    handle.addEventListener('touchstart', e => {
+      e.preventDefault();
+      startY = e.touches[0].clientY;
+      startIdx = parseInt(card.dataset.idx);
+      card.classList.add('dragging');
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const delta = e.touches[0].clientY - startY;
+      card.style.transform = `translateY(${delta}px)`;
+      card.style.zIndex = '50';
+      document.querySelectorAll('.rep-order-card').forEach(c => c.classList.remove('drag-over'));
+      const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+      const target = el?.closest('.rep-order-card');
+      if (target && target !== card) target.classList.add('drag-over');
+    }, { passive: false });
+
+    handle.addEventListener('touchend', e => {
+      card.classList.remove('dragging');
+      card.style.transform = '';
+      card.style.zIndex = '';
+      const y = e.changedTouches[0].clientY;
+      const el = document.elementFromPoint(e.changedTouches[0].clientX, y);
+      const target = el?.closest('.rep-order-card');
+      document.querySelectorAll('.rep-order-card').forEach(c => c.classList.remove('drag-over'));
+      if (target && target !== card) repReorder(startIdx, parseInt(target.dataset.idx));
+    }, { passive: false });
+
+    card.setAttribute('draggable', 'false');
+    handle.setAttribute('draggable', 'true');
+    handle.addEventListener('dragstart', e => {
+      repDragSrcIdx = parseInt(card.dataset.idx);
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    handle.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.rep-order-card').forEach(c => c.classList.remove('drag-over'));
+    });
+  });
+  cards.forEach(card => {
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      document.querySelectorAll('.rep-order-card').forEach(c => c.classList.remove('drag-over'));
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (repDragSrcIdx !== null && repDragSrcIdx !== parseInt(card.dataset.idx))
+        repReorder(repDragSrcIdx, parseInt(card.dataset.idx));
+      repDragSrcIdx = null;
+    });
+  });
+}
+
+function repReorder(fromIdx, toIdx) {
+  const sorted = repGetSortedOrders().filter(o => o.status !== 'entregado');
+  if (fromIdx < 0 || toIdx < 0 || fromIdx >= sorted.length || toIdx >= sorted.length) return;
+  const moved = sorted.splice(fromIdx, 1)[0];
+  sorted.splice(toIdx, 0, moved);
+  const delivered = repGetSortedOrders().filter(o => o.status === 'entregado').map(o => o.id);
+  repSortOrder = [...sorted.map(o => o.id), ...delivered];
+  repSaveSortOrder();
+  repRender();
+  showToast('Orden actualizado');
+}
 </script>
 </body>
 </html>
