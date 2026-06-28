@@ -902,6 +902,18 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           <div class="prices-grid" id="prices-grid"></div>
           <button class="btn-add-product" onclick="addNewProduct()">+ Agregar producto</button>
           <button class="btn-save-prices" onclick="savePrices()" style="margin-top:12px">💾 Guardar cambios</button>
+
+          <!-- ENVÍO A DOMICILIO -->
+          <div class="config-card" style="max-width:480px;margin-top:20px">
+            <h2>🛵 Envío a domicilio</h2>
+            <div class="config-intro">Cuando el cliente elige "A domicilio" se le suma este recargo al total del pedido. Si elige "Ir a buscar", no se cobra nada extra.</div>
+            <div class="form-group">
+              <label>RECARGO POR ENVÍO ($)</label>
+              <input type="number" id="cfg-delivery-fee" min="0" step="100" placeholder="Ej: 1000" oninput="previewDeliveryFee()" />
+              <div class="hint">Se aplica solo a pedidos a domicilio. Podés cambiarlo cuando quieras.</div>
+            </div>
+            <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
+          </div>
         </div>
 
         <!-- CONFIGURACIÓN -->
@@ -969,18 +981,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
               <label>CIERRE</label>
               <input type="time" id="cfg-horario-cierre" />
             </div>
-          </div>
-          <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
-        </div>
-
-        <!-- ENVÍO A DOMICILIO -->
-        <div class="config-card" style="max-width:480px">
-          <h2>🛵 Envío a domicilio</h2>
-          <div class="config-intro">Cuando el cliente elige "A domicilio" se le suma este recargo al total del pedido. Si elige "Ir a buscar", no se cobra nada extra.</div>
-          <div class="form-group">
-            <label>RECARGO POR ENVÍO ($)</label>
-            <input type="number" id="cfg-delivery-fee" min="0" step="100" placeholder="Ej: 1000" oninput="previewDeliveryFee()" />
-            <div class="hint">Se aplica solo a pedidos a domicilio. Podés cambiarlo cuando quieras.</div>
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
         </div>
@@ -1328,7 +1328,6 @@ function renderConfigPanel() {
   document.getElementById('cfg-alias').value = settings.payment_alias || '';
   document.getElementById('cfg-titular').value = settings.payment_titular || '';
   document.getElementById('cfg-mplink').value = settings.payment_link || '';
-  document.getElementById('cfg-delivery-fee').value = settings.delivery_fee ?? 1000;
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
   renderStoreModeUI();
@@ -2275,6 +2274,9 @@ async function renderPricesPanel() {
   localPrices = JSON.parse(JSON.stringify(prices)); // deep copy
   deletedIds = new Set();
   buildPricesUI();
+  // Cargar el valor actual del recargo de envío
+  const feeInput = document.getElementById('cfg-delivery-fee');
+  if (feeInput) feeInput.value = settings.delivery_fee ?? 1000;
 }
 
 function buildPricesUI() {
