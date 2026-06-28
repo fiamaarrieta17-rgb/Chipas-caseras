@@ -3961,7 +3961,9 @@ function repRender() {
     repRenderByOrder(sorted, container);
   }
   repUpdateChatFab();
-}(sorted, container) {
+}
+
+function repRenderByOrder(sorted, container) {
   container.innerHTML = '';
   sorted.forEach((order, idx) => container.appendChild(repBuildCard(order, idx, true)));
   repInitDragDrop();
