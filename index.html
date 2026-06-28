@@ -1507,6 +1507,10 @@ function isStoreOpenNow() {
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const abrMin = aH * 60 + aM;
   const cieMin = cH * 60 + cM;
+  if (cieMin <= abrMin) {
+    // El horario cruza la medianoche (ej: apertura 09:00, cierre 04:00 del día siguiente)
+    return nowMin >= abrMin || nowMin < cieMin;
+  }
   return nowMin >= abrMin && nowMin < cieMin;
 }
 
