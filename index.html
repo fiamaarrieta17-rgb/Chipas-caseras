@@ -1374,17 +1374,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           <div class="prices-grid" id="prices-grid"></div>
           <button class="btn-add-product" onclick="addNewProduct()">+ Agregar producto</button>
           <button class="btn-save-prices" onclick="savePrices()" style="margin-top:12px">💾 Guardar cambios</button>
-
-          <!-- ENVÍO A DOMICILIO POR LOCALIDAD -->
-          <div class="config-card" style="max-width:540px;margin-top:20px">
-            <h2>🏍️ Envío a domicilio por localidad</h2>
-            <div class="config-intro">El cliente elige su localidad y se le suma el costo correspondiente. Si no hay localidades cargadas, el envío no tiene recargo extra.</div>
-            <div class="loc-col-labels"><span>Localidad</span><span>Precio envío ($)</span></div>
-            <div class="localidades-list" id="localidades-list"></div>
-            <button class="btn-add-localidad" onclick="addLocalidadRow()">+ Agregar localidad</button>
-            <input type="hidden" id="cfg-delivery-fee" value="0" />
-            <button class="btn-save-prices" onclick="saveLocalidades()" style="margin-top:14px">💾 Guardar localidades</button>
-          </div>
+          <input type="hidden" id="cfg-delivery-fee" value="0" />
         </div>
 
         <!-- CONFIGURACIÓN -->
@@ -1452,6 +1442,15 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
           </div><!-- /config-card horario -->
+          <!-- ENVÍO A DOMICILIO POR LOCALIDAD -->
+          <div class="config-card" style="max-width:540px;margin-top:0">
+            <h2>🏍️ Envío a domicilio por localidad</h2>
+            <div class="config-intro">El cliente elige su localidad y se le suma el costo correspondiente. Si no hay localidades cargadas, el envío no tiene recargo extra.</div>
+            <div class="loc-col-labels"><span>Localidad</span><span>Precio envío ($)</span></div>
+            <div class="localidades-list" id="localidades-list"></div>
+            <button class="btn-add-localidad" onclick="addLocalidadRow()">+ Agregar localidad</button>
+            <button class="btn-save-prices" onclick="saveLocalidades()" style="margin-top:14px">💾 Guardar localidades</button>
+          </div>
           <!-- REPARTIDORES (usuario + PIN, multi-usuario) -->
           <div class="config-card" style="max-width:480px;margin-top:0">
             <h2>🏍️ Acceso repartidor</h2>
@@ -1944,6 +1943,7 @@ function renderConfigPanel() {
   document.getElementById('cfg-mplink').value = settings.payment_link || '';
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
+  loadLocalidadesAdmin();
   loadRepUsersAdmin();
   renderStoreModeUI();
   previewConfig();
@@ -2243,6 +2243,7 @@ async function init() {
 // ==================== CLIENTE ====================
 function initCliente() {
   renderProducts();
+  loadLocalidades();
   checkStoreClosed();
   setInterval(refreshStoreStatus, 30000); // re-consulta Supabase cada 30s (no solo memoria local)
   if (myOrderId) { checkMyOrder(); subscribeClientChat(); }
@@ -2272,6 +2273,12 @@ function initCliente() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chipas_prices' }, async () => {
       const { data } = await db.from('chipas_prices').select('*').order('price');
       if (data) { prices = data; renderProducts(); }
+    })
+    .subscribe();
+
+  db.channel('localidades-client')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chipas_localidades' }, async () => {
+      await loadLocalidades();
     })
     .subscribe();
 }
@@ -2903,7 +2910,6 @@ async function showAdminPanel(panel) {
 }
 
 async function renderPricesPanel() {
-  await loadLocalidadesAdmin();
   const { data } = await db.from('chipas_prices').select('*').order('price');
   if (data) prices = data;
   localPrices = JSON.parse(JSON.stringify(prices)); // deep copy
@@ -2940,7 +2946,19 @@ function buildPricesUI() {
   });
 }
 
+function syncPricesFromDOM() {
+  localPrices = localPrices.map((p, idx) => ({
+    ...p,
+    name: document.getElementById('pname-' + idx)?.value ?? p.name,
+    description: document.getElementById('pdesc-' + idx)?.value ?? p.description,
+    emoji: document.getElementById('pemoji-' + idx)?.value ?? p.emoji,
+    price: document.getElementById('pprice-' + idx) ? (parseInt(document.getElementById('pprice-' + idx).value, 10) || 0) : p.price,
+    promo: document.getElementById('ppromo-' + idx) ? document.getElementById('ppromo-' + idx).checked : p.promo
+  }));
+}
+
 function addNewProduct() {
+  syncPricesFromDOM();
   localPrices.push({
     id: 'new-' + Date.now(),
     name: 'Nuevo producto',
@@ -2959,6 +2977,7 @@ function addNewProduct() {
 
 function deleteProduct(idx) {
   if (!confirm('¿Borrar este producto?')) return;
+  syncPricesFromDOM();
   const p = localPrices[idx];
   if (p.id && !String(p.id).startsWith('new-')) deletedIds.add(p.id);
   localPrices.splice(idx, 1);
@@ -3586,7 +3605,16 @@ function buildLocalidadesUI() {
     </div>`).join('');
 }
 
+function syncLocalidadesFromDOM() {
+  localLocalidades = localLocalidades.map((loc, idx) => ({
+    ...loc,
+    nombre: document.getElementById('loc-nombre-' + idx)?.value ?? loc.nombre,
+    precio: document.getElementById('loc-precio-' + idx) ? (parseInt(document.getElementById('loc-precio-' + idx).value, 10) || 0) : loc.precio
+  }));
+}
+
 function addLocalidadRow() {
+  syncLocalidadesFromDOM();
   localLocalidades.push({ id: 'new-' + Date.now(), nombre: '', precio: 0 });
   buildLocalidadesUI();
   // Focus last name input
@@ -3597,6 +3625,7 @@ function addLocalidadRow() {
 }
 
 function deleteLocalidadRow(idx) {
+  syncLocalidadesFromDOM();
   localLocalidades.splice(idx, 1);
   buildLocalidadesUI();
 }
@@ -3863,7 +3892,18 @@ function buildRepUsersUI() {
     </div>`).join('');
 }
 
+function syncRepUsersFromDOM() {
+  localRepUsers = localRepUsers.map((r, idx) => ({
+    ...r,
+    nombre: document.getElementById('rep-user-nombre-' + idx)?.value ?? r.nombre,
+    usuario: document.getElementById('rep-user-usuario-' + idx)?.value ?? r.usuario,
+    pin: document.getElementById('rep-user-pin-' + idx)?.value ?? r.pin,
+    activo: document.getElementById('rep-user-activo-' + idx) ? document.getElementById('rep-user-activo-' + idx).checked : r.activo
+  }));
+}
+
 function addRepUserRow() {
+  syncRepUsersFromDOM();
   localRepUsers.push({ id: 'new-' + Date.now(), usuario: '', pin: '', nombre: '', activo: true });
   buildRepUsersUI();
   setTimeout(() => {
@@ -3873,6 +3913,7 @@ function addRepUserRow() {
 }
 
 function deleteRepUserRow(idx) {
+  syncRepUsersFromDOM();
   localRepUsers.splice(idx, 1);
   buildRepUsersUI();
 }
