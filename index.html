@@ -2672,7 +2672,9 @@ function validate() {
     if (!val) { err.classList.add('show'); ok = false; }
     else err.classList.remove('show');
   });
-  if (selectedPaymentMethod === 'transferencia') {
+  // Solo validar nombre de transferencia si el panel de pago está visible
+  const paymentCardVisible = document.getElementById('payment-card').classList.contains('visible');
+  if (paymentCardVisible && selectedPaymentMethod === 'transferencia') {
     const valTransf = document.getElementById('f-nombre-transferencia').value.trim();
     const errTransf = document.getElementById('e-nombre-transferencia');
     if (!valTransf) { errTransf.classList.add('show'); ok = false; }
