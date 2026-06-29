@@ -993,6 +993,28 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   text-underline-offset: 2px;
 }
 .btn-rep-config-cancel:hover { color: var(--navy); }
+.rep-config-zonas-checks {
+  display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px;
+}
+.rep-zona-check-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border: 1.5px solid var(--border);
+  border-radius: 10px; cursor: pointer; transition: all 0.15s;
+  background: var(--cream); user-select: none;
+}
+.rep-zona-check-row:hover { border-color: var(--gold-light); background: #fffbf3; }
+.rep-zona-check-row.checked { border-color: var(--gold); background: #fffbf3; }
+.rep-zona-check-box {
+  width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+  border: 2px solid var(--border); background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: all 0.15s;
+}
+.rep-zona-check-row.checked .rep-zona-check-box {
+  background: var(--gold); border-color: var(--gold); color: #fff;
+}
+.rep-zona-check-name { font-size: 14px; font-weight: 600; color: var(--navy); flex: 1; }
+.rep-zona-check-price { font-size: 12px; color: var(--muted); }
 .btn-rep-settings {
   background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
   color: rgba(255,255,255,0.8); border-radius: 8px; padding: 5px 8px;
@@ -1743,14 +1765,10 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
 
       <div class="rep-config-section">
-        <div class="rep-config-section-label">Zonas que repartís</div>
-        <div class="rep-config-zonas" id="rep-cfg-zonas-list"></div>
-        <div class="rep-config-zona-input-row">
-          <input type="text" id="rep-cfg-zona-input" placeholder="Ej: Morón, Palermo..." 
-            onkeydown="if(event.key==='Enter'){event.preventDefault();repCfgAddZona();}" />
-          <button onclick="repCfgAddZona()">+ Agregar</button>
-        </div>
-        <div class="rep-config-hint">Las zonas se muestran en tu perfil y le sirven al admin para asignarte pedidos.</div>
+        <div class="rep-config-section-label">Localidades que repartís</div>
+        <div id="rep-cfg-zonas-loading" style="font-size:12px;color:var(--muted);padding:6px 0">Cargando localidades...</div>
+        <div class="rep-config-zonas-checks" id="rep-cfg-zonas-checks" style="display:none"></div>
+        <div class="rep-config-hint">Elegí las localidades de la lista. Solo el admin puede modificar precios.</div>
       </div>
 
       <div class="rep-config-section">
@@ -4420,9 +4438,9 @@ async function repMarkEntregado(orderId) {
 
 
 // ===== REP CONFIG =====
-let repCfgZonas = [];
+let repCfgZonas = []; // array de nombres de localidades seleccionadas
 
-function repOpenConfig() {
+async function repOpenConfig() {
   const u = repCurrentUser;
   if (!u) return;
   document.getElementById('rep-cfg-nombre').value = u.nombre || '';
@@ -4431,13 +4449,14 @@ function repOpenConfig() {
   document.getElementById('rep-cfg-pin-confirmar').value = '';
   document.getElementById('rep-cfg-pin-error').classList.remove('show');
   document.getElementById('rep-cfg-pin-mismatch').classList.remove('show');
-  // Zonas
-  repCfgZonas = Array.isArray(u.zonas) ? [...u.zonas] : (u.zonas ? String(u.zonas).split(',').map(z=>z.trim()).filter(Boolean) : []);
-  repCfgRenderZonas();
+  // Zonas seleccionadas del repartidor
+  repCfgZonas = Array.isArray(u.zonas) ? [...u.zonas] : [];
   // Mensaje WSP
   const defaultMsg = `Hola {nombre}, soy el repartidor de {negocio}. Ya estoy en camino con tu pedido 🏍️`;
   document.getElementById('rep-cfg-wsp-msg').value = u.wsp_msg || defaultMsg;
   document.getElementById('rep-config-overlay').classList.add('open');
+  // Load localidades from Supabase
+  await repCfgLoadLocalidades();
 }
 
 function repCloseConfig() {
@@ -4448,28 +4467,38 @@ function repConfigOverlayClick(e) {
   if (e.target === document.getElementById('rep-config-overlay')) repCloseConfig();
 }
 
-function repCfgRenderZonas() {
-  const el = document.getElementById('rep-cfg-zonas-list');
-  if (!el) return;
-  if (!repCfgZonas.length) { el.innerHTML = '<span style="font-size:12px;color:var(--muted)">Sin zonas cargadas</span>'; return; }
-  el.innerHTML = repCfgZonas.map((z, i) =>
-    `<span class="rep-zona-tag">${repEsc(z)}<button onclick="repCfgRemoveZona(${i})" title="Quitar">✕</button></span>`
-  ).join('');
+async function repCfgLoadLocalidades() {
+  const loadingEl = document.getElementById('rep-cfg-zonas-loading');
+  const checksEl = document.getElementById('rep-cfg-zonas-checks');
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (checksEl) checksEl.style.display = 'none';
+
+  const { data, error } = await db.from('chipas_localidades').select('nombre, precio').order('orden').order('nombre');
+  if (loadingEl) loadingEl.style.display = 'none';
+  if (error || !data || !data.length) {
+    if (loadingEl) { loadingEl.style.display = 'block'; loadingEl.textContent = 'No hay localidades cargadas aún.'; }
+    return;
+  }
+  if (checksEl) checksEl.style.display = 'flex';
+  checksEl.innerHTML = data.map(loc => {
+    const checked = repCfgZonas.includes(loc.nombre);
+    const precio = loc.precio > 0 ? `+$${Number(loc.precio).toLocaleString('es-AR')}` : 'Sin recargo';
+    return `<div class="rep-zona-check-row${checked ? ' checked' : ''}" onclick="repCfgToggleZona(this, '${repEsc(loc.nombre)}')">
+      <div class="rep-zona-check-box">${checked ? '✓' : ''}</div>
+      <span class="rep-zona-check-name">${repEsc(loc.nombre)}</span>
+      <span class="rep-zona-check-price">${precio}</span>
+    </div>`;
+  }).join('');
 }
 
-function repCfgAddZona() {
-  const inp = document.getElementById('rep-cfg-zona-input');
-  const val = inp.value.trim();
-  if (!val) return;
-  const nuevas = val.split(',').map(z => z.trim()).filter(z => z && !repCfgZonas.includes(z));
-  repCfgZonas.push(...nuevas);
-  inp.value = '';
-  repCfgRenderZonas();
-}
-
-function repCfgRemoveZona(idx) {
-  repCfgZonas.splice(idx, 1);
-  repCfgRenderZonas();
+function repCfgToggleZona(el, nombre) {
+  const checked = el.classList.toggle('checked');
+  el.querySelector('.rep-zona-check-box').textContent = checked ? '✓' : '';
+  if (checked) {
+    if (!repCfgZonas.includes(nombre)) repCfgZonas.push(nombre);
+  } else {
+    repCfgZonas = repCfgZonas.filter(z => z !== nombre);
+  }
 }
 
 async function repSaveConfig() {
