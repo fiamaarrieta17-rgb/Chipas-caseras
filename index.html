@@ -1287,7 +1287,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 </div>
 
 <!-- ===================== VISTA CLIENTE ===================== -->
-<div id="view-cliente">
+<div id="view-cliente" style="display:none">
   <div class="client-header">
     <div class="tagline" id="client-tagline">✦ El sabor de lo casero en tu freezer ✦</div>
     <h1 id="client-title">CHIPAS <span>PREMIUM</span></h1>
@@ -1565,6 +1565,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div class="nav-item" id="nav-historial" onclick="showAdminPanel('historial')">📊 Historial de ganancias</div>
         <div class="nav-item" id="nav-resenas" onclick="showAdminPanel('resenas')">⭐ Reseñas de clientes</div>
         <div class="nav-item" id="nav-turnos" onclick="showAdminPanel('turnos')">📅 Turnos de repartidores <span class="badge" id="badge-turnos" style="display:none">0</span></div>
+        <div class="nav-item" id="nav-postulaciones" onclick="showAdminPanel('postulaciones')">📋 Postulaciones <span class="badge" id="badge-postulaciones" style="display:none">0</span></div>
         <div class="nav-label">Negocio</div>
         <div class="nav-item" id="nav-config" onclick="showAdminPanel('config')">⚙️ Configuración</div>
         <div class="nav-item" id="nav-seguridad" onclick="showAdminPanel('seguridad')">🔒 Seguridad</div>
@@ -1758,6 +1759,12 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           <div id="admin-devoluciones-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Cargando...</div></div>
         </div>
 
+        <div id="admin-panel-postulaciones" style="display:none">
+          <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px">📋 Postulaciones de repartidores</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Personas que se postularon para repartir. Podés contactarlas por WhatsApp, aceptarlas o rechazarlas.</p>
+          <div id="admin-postulaciones-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Cargando...</div></div>
+        </div>
+
         <div id="admin-panel-historial" style="display:none">
           <div class="historial-filter">
             <input type="date" id="hist-desde" />
@@ -1871,6 +1878,71 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
       <div class="rep-login-error" id="rep-login-error">Usuario o PIN incorrecto</div>
       <button class="btn-rep-login" id="btn-rep-login" onclick="repDoLogin()">Entrar &rarr;</button>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">¿Querés trabajar como repartidor?</div>
+        <button onclick="repAbrirPostulacion()" style="width:100%;padding:11px;background:transparent;border:1.5px solid var(--gold);border-radius:10px;color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s" onmouseover="this.style.background='var(--gold)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--gold)'">📋 Quiero postularme</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL POSTULACIÓN -->
+  <div id="rep-postulacion-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:36px;margin-bottom:6px">🏍️</div>
+        <div style="font-size:20px;font-weight:800;color:var(--navy)">Postulación <span style="color:var(--gold)">Repartidor</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Completá tus datos y te contactamos</div>
+      </div>
+
+      <div id="rep-post-form">
+        <div class="rep-form-group">
+          <label>Nombre completo *</label>
+          <input type="text" id="post-nombre" placeholder="Ej: Lucía Gómez" autocomplete="name" />
+        </div>
+        <div class="rep-form-group">
+          <label>DNI *</label>
+          <input type="text" id="post-dni" placeholder="Ej: 38456789" inputmode="numeric" maxlength="10" />
+        </div>
+        <div class="rep-form-group">
+          <label>Número de celular *</label>
+          <input type="tel" id="post-cel" placeholder="Ej: 3415551234" inputmode="numeric" />
+        </div>
+        <div class="rep-form-group">
+          <label>Localidad donde repartirías *</label>
+          <div class="localidad-select-wrap">
+            <select id="post-localidad">
+              <option value="">— Elegí una localidad —</option>
+            </select>
+          </div>
+        </div>
+        <div class="rep-form-group">
+          <label>Vehículo *</label>
+          <div class="localidad-select-wrap">
+            <select id="post-vehiculo">
+              <option value="">— Tipo de vehículo —</option>
+              <option value="moto">🏍️ Moto</option>
+              <option value="auto">🚗 Auto</option>
+              <option value="bicicleta">🚲 Bicicleta</option>
+              <option value="a_pie">🚶 A pie</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="rep-form-group">
+          <label>Mensaje adicional (opcional)</label>
+          <textarea id="post-mensaje" placeholder="Contanos algo más sobre vos, disponibilidad, etc." rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none;resize:none;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+        <div id="rep-post-error" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-bottom:10px;padding:8px;background:#fdecea;border-radius:8px"></div>
+        <button id="btn-rep-post-enviar" onclick="repEnviarPostulacion()" style="width:100%;padding:14px;background:var(--gold);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s" onmouseover="this.style.background='#b8832e'" onmouseout="this.style.background='var(--gold)'">Enviar postulación →</button>
+        <button onclick="repCerrarPostulacion()" style="width:100%;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit;margin-top:6px;text-decoration:underline;text-underline-offset:2px">Cancelar</button>
+      </div>
+
+      <div id="rep-post-exito" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px">¡Postulación enviada!</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px">Recibimos tus datos. El administrador los va a revisar y te va a contactar por WhatsApp.</div>
+        <button onclick="repCerrarPostulacion()" style="padding:12px 28px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Cerrar</button>
+      </div>
     </div>
   </div>
 
@@ -2776,7 +2848,32 @@ async function submitOrder() {
     // Detect modification type for already-paid orders in editMode
     if (editMode && myOrderId) {
       const { data: prevOrder } = await db.from('chipas_orders').select('*').eq('id', myOrderId).single();
-      if (prevOrder && prevOrder.pago_avisado) {
+
+      // Si está en camino: solo se permite cambiar dirección, productos se mantienen igual
+      if (prevOrder && prevOrder.status === 'en_camino') {
+        order.items = prevOrder.items;
+        order.total = prevOrder.total; // base sin extra de lugar
+        order.status = prevOrder.status; // preservar status siempre
+        const cambiaLugar = (prevOrder.calle !== order.calle || prevOrder.altura !== order.altura || prevOrder.localidad !== order.localidad);
+        if (cambiaLugar) {
+          const extraLoc = Number(settings.extra_cambio_localidad) || 0;
+          if (extraLoc > 0) {
+            order.status = 'modificado_pago_pendiente';
+            order.modificacion_tipo = 'lugar';
+            order.modificacion_extra = extraLoc;
+            order.total_original = prevOrder.total;
+            order.diferencia_pago = extraLoc;
+            order.pago_avisado = false;
+          }
+          // Notificar al admin que cambió la dirección
+          await db.from('chipas_notificaciones').insert({
+            repartidor_id: 'admin',
+            tipo: 'cambio_direccion',
+            mensaje: `📍 ${prevOrder.nombre} cambió la dirección mientras el pedido está en camino.`,
+            leida: false, created_at: new Date().toISOString(), order_id: myOrderId
+          }).catch(() => {});
+        }
+      } else if (prevOrder && prevOrder.pago_avisado) {
         const modType = detectModificationType(prevOrder, order);
         if (modType.agregaProductos || modType.cambiaLugar) {
           order.status = 'modificado_pago_pendiente';
@@ -2830,6 +2927,9 @@ async function submitOrder() {
     if (btnCancelEditDone) btnCancelEditDone.style.display = 'none';
     const formBannerDone = document.getElementById('edit-mode-extra-banner');
     if (formBannerDone) formBannerDone.style.display = 'none';
+    // Restaurar grilla de productos por si estaba bloqueada (ej: edición en_camino)
+    const productsGridDone = document.getElementById('products-grid');
+    if (productsGridDone) { productsGridDone.style.pointerEvents = ''; productsGridDone.style.opacity = ''; }
     modoEncargo = false;
     showTrackingLink(orderId);
     showToast(modoEncargo ? '📝 ¡Encargo enviado!' : '✅ ¡Pedido enviado!');
@@ -3030,20 +3130,28 @@ function updateStatusTracker(order) {
   const postActions = document.getElementById('post-order-actions');
   const showPayment = (order.status === 'pendiente' || order.status === 'aceptado' || order.status === 'modificado_pago_pendiente');
   const canEdit = (order.status === 'pendiente' || order.status === 'aceptado');
-  postActions.style.display = showPayment ? 'block' : 'none';
+  const canEditDir = (order.status === 'en_camino'); // solo dirección, no productos
+  postActions.style.display = (showPayment || canEditDir) ? 'block' : 'none';
   const editBtn = document.getElementById('btn-edit-order');
   const cancelBtn = document.getElementById('btn-cancel-order');
   const editLocked = document.getElementById('edit-locked-msg');
   const editHint = document.getElementById('edit-extra-hint');
-  if (editBtn) editBtn.style.display = canEdit ? 'inline-block' : 'none';
+  if (editBtn) editBtn.style.display = (canEdit || canEditDir) ? 'inline-block' : 'none';
+  if (editBtn && canEdit) editBtn.textContent = '✏️ Modificar mi pedido';
+  else if (editBtn && canEditDir) editBtn.textContent = '📍 Cambiar dirección';
   if (cancelBtn) cancelBtn.style.display = canEdit ? 'inline-block' : 'none';
   if (editLocked) {
-    if (order.status === 'en_camino') { editLocked.style.display = 'block'; editLocked.textContent = '🏍️ Tu pedido ya salió, no se puede modificar'; }
-    else if (order.status === 'modificado_pago_pendiente') { editLocked.style.display = 'block'; editLocked.textContent = '⚠️ Pedido modificado · Esperando tu pago de la diferencia'; }
+    if (order.status === 'modificado_pago_pendiente') { editLocked.style.display = 'block'; editLocked.textContent = '⚠️ Pedido modificado · Esperando tu pago de la diferencia'; }
     else editLocked.style.display = 'none';
   }
   if (editHint) {
-    if (canEdit && order.pago_avisado) {
+    if (canEditDir) {
+      const extraLoc = Number(settings.extra_cambio_localidad) || 0;
+      editHint.style.display = 'block';
+      editHint.innerHTML = extraLoc > 0
+        ? `🏍️ Tu pedido ya salió. Solo podés cambiar la dirección (tiene un extra de <strong>+${formatPrice(extraLoc)}</strong>). No se pueden modificar productos.`
+        : `🏍️ Tu pedido ya salió. Solo podés cambiar la dirección de entrega.`;
+    } else if (canEdit && order.pago_avisado) {
       const extraProd = Number(settings.extra_modificacion) || 0;
       const extraLoc = Number(settings.extra_cambio_localidad) || 0;
       const parts = [];
@@ -3124,6 +3232,7 @@ async function editOrder() {
   const { data: order } = await db.from('chipas_orders').select('*').eq('id', myOrderId).single();
   if (!order) return;
   editMode = true;
+  const enCamino = order.status === 'en_camino';
   document.getElementById('f-nombre').value = order.nombre;
   document.getElementById('f-cel').value = order.cel;
   document.getElementById('f-calle').value = order.calle || '';
@@ -3135,19 +3244,29 @@ async function editOrder() {
   quantities = {};
   order.items.forEach(i => { quantities[i.id] = i.qty; });
   renderProducts();
+
+  // Si está en camino, bloquear la grilla de productos (solo dirección)
+  const productsGrid = document.getElementById('products-grid');
+  if (productsGrid) productsGrid.style.pointerEvents = enCamino ? 'none' : '';
+  if (productsGrid) productsGrid.style.opacity = enCamino ? '0.45' : '';
+
   document.getElementById('order-form-card').style.display = 'block';
   document.getElementById('success-msg').classList.remove('visible');
-  // Ocultar los botones de "Modificar/Cancelar" mientras el formulario está abierto,
-  // para que no se pueda re-disparar editOrder() por error y resetear lo que ya cambiaste.
   document.getElementById('post-order-actions').style.display = 'none';
   const btnSubmit = document.getElementById('btn-submit');
-  btnSubmit.disabled = false; // por si había quedado deshabilitado por "tienda cerrada"
-  btnSubmit.textContent = 'Actualizar pedido →';
+  btnSubmit.disabled = false;
+  btnSubmit.textContent = enCamino ? 'Actualizar dirección →' : 'Actualizar pedido →';
   const btnCancelEdit = document.getElementById('btn-cancel-edit');
   if (btnCancelEdit) btnCancelEdit.style.display = 'inline-block';
   const formBanner = document.getElementById('edit-mode-extra-banner');
   if (formBanner) {
-    if (order.pago_avisado) {
+    if (enCamino) {
+      const extraLoc = Number(settings.extra_cambio_localidad) || 0;
+      formBanner.style.display = 'block';
+      formBanner.innerHTML = extraLoc > 0
+        ? `🏍️ Tu pedido ya salió. Solo podés cambiar la dirección de entrega (se suma un extra de <strong>+${formatPrice(extraLoc)}</strong>). Los productos están bloqueados.`
+        : `🏍️ Tu pedido ya salió. Solo podés cambiar la dirección de entrega.`;
+    } else if (order.pago_avisado) {
       const extraProd = Number(settings.extra_modificacion) || 0;
       const extraLoc = Number(settings.extra_cambio_localidad) || 0;
       const parts = [];
@@ -3170,6 +3289,9 @@ function cancelEditForm() {
   if (btnCancelEdit) btnCancelEdit.style.display = 'none';
   const formBanner = document.getElementById('edit-mode-extra-banner');
   if (formBanner) formBanner.style.display = 'none';
+  // Restaurar grilla de productos por si estaba bloqueada
+  const productsGrid = document.getElementById('products-grid');
+  if (productsGrid) { productsGrid.style.pointerEvents = ''; productsGrid.style.opacity = ''; }
   document.getElementById('success-msg').classList.add('visible');
   document.getElementById('post-order-actions').style.display = 'block';
   checkMyOrder();
@@ -3221,7 +3343,18 @@ function initAdmin() {
   initAdminChatListeners();
   initAdminTurnosRealtime();
   updateDevolucionesBadge();
+  updatePostulacionesBadge();
   loadActiveRepartidores();
+
+  // Realtime: nueva postulación → actualizar badge
+  db.channel('admin-postulaciones-watch')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_postulaciones' }, (payload) => {
+      if (!payload.new) return;
+      showToast(`📋 Nueva postulación de ${payload.new.nombre || 'alguien'}`);
+      updatePostulacionesBadge();
+      if (document.getElementById('admin-panel-postulaciones')?.style.display === 'block') loadAdminPostulaciones();
+    })
+    .subscribe();
 
   db.channel('admin-orders')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_orders' }, (payload) => {
@@ -3475,9 +3608,9 @@ function filterOrders(status, el) {
 let localPrices = []; // edited copies
 let deletedIds = new Set();
 
-const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Turnos de repartidores', devoluciones: 'Devoluciones pendientes', config: 'Configuración', seguridad: 'Seguridad' };
+const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Turnos de repartidores', devoluciones: 'Devoluciones pendientes', postulaciones: 'Postulaciones de repartidores', config: 'Configuración', seguridad: 'Seguridad' };
 async function showAdminPanel(panel) {
-  ['pedidos','precios','historial','resenas','turnos','devoluciones','config','seguridad'].forEach(p => {
+  ['pedidos','precios','historial','resenas','turnos','devoluciones','postulaciones','config','seguridad'].forEach(p => {
     document.getElementById('admin-panel-' + p).style.display = p === panel ? 'block' : 'none';
   });
   document.getElementById('panel-title').textContent = PANEL_TITLES[panel] || panel;
@@ -3489,6 +3622,7 @@ async function showAdminPanel(panel) {
   if (panel === 'resenas') loadAdminReviews();
   if (panel === 'turnos') loadAdminTurnos();
   if (panel === 'devoluciones') loadAdminDevoluciones();
+  if (panel === 'postulaciones') loadAdminPostulaciones();
   closeSidebar();
 }
 
@@ -4576,6 +4710,7 @@ function repHideLoader() {
 
 async function repInit() {
   try {
+    repLoadLocalidadesParaPostulacion(); // para el select del form de postulación
     const saved = JSON.parse(sessionStorage.getItem(REP_USER_STORAGE_KEY) || 'null');
     if (saved && saved.id) {
       repCurrentUser = saved;
@@ -5430,6 +5565,20 @@ function repUpdateNotifBadge() {
 // ALTER TABLE chipas_turnos ENABLE ROW LEVEL SECURITY;
 // CREATE POLICY "allow_all_turnos" ON chipas_turnos FOR ALL USING (true) WITH CHECK (true);
 
+// CREATE TABLE IF NOT EXISTS chipas_postulaciones (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   nombre text NOT NULL,
+//   dni text NOT NULL,
+//   cel text NOT NULL,
+//   localidad text NOT NULL,
+//   vehiculo text NOT NULL,
+//   mensaje text,
+//   status text DEFAULT 'pendiente' CHECK (status IN ('pendiente','aceptado','rechazado')),
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_postulaciones ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_postulaciones" ON chipas_postulaciones FOR ALL USING (true) WITH CHECK (true);
+
 async function repOpenTurnos() {
   document.getElementById('rep-turnos-overlay').classList.add('open');
   // Set default date = today
@@ -5649,6 +5798,140 @@ function initAdminTurnosRealtime() {
       if (document.getElementById('admin-panel-turnos')?.style.display === 'block') loadAdminTurnos();
     })
     .subscribe();
+}
+
+// ===== POSTULACIONES =====
+
+// -- Lado repartidor --
+function repAbrirPostulacion() {
+  document.getElementById('rep-post-form').style.display = 'block';
+  document.getElementById('rep-post-exito').style.display = 'none';
+  document.getElementById('rep-post-error').style.display = 'none';
+  // Cargar localidades en el select
+  const sel = document.getElementById('post-localidad');
+  sel.innerHTML = '<option value="">— Elegí una localidad —</option>';
+  if (window._localidades && window._localidades.length) {
+    window._localidades.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.nombre; opt.textContent = l.nombre;
+      sel.appendChild(opt);
+    });
+  }
+  const ov = document.getElementById('rep-postulacion-overlay');
+  ov.style.display = 'flex';
+}
+
+function repCerrarPostulacion() {
+  document.getElementById('rep-postulacion-overlay').style.display = 'none';
+  // Limpiar campos
+  ['post-nombre','post-dni','post-cel','post-mensaje'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('post-localidad').value = '';
+  document.getElementById('post-vehiculo').value = '';
+}
+
+async function repEnviarPostulacion() {
+  const nombre = document.getElementById('post-nombre').value.trim();
+  const dni = document.getElementById('post-dni').value.trim();
+  const cel = document.getElementById('post-cel').value.trim();
+  const localidad = document.getElementById('post-localidad').value;
+  const vehiculo = document.getElementById('post-vehiculo').value;
+  const mensaje = document.getElementById('post-mensaje').value.trim();
+  const errEl = document.getElementById('rep-post-error');
+
+  if (!nombre || !dni || !cel || !localidad || !vehiculo) {
+    errEl.textContent = 'Completá todos los campos obligatorios.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/^\d{7,10}$/.test(dni)) {
+    errEl.textContent = 'El DNI debe tener entre 7 y 10 dígitos numéricos.';
+    errEl.style.display = 'block'; return;
+  }
+  errEl.style.display = 'none';
+  const btn = document.getElementById('btn-rep-post-enviar');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const vehiculoLabel = { moto:'Moto', auto:'Auto', bicicleta:'Bicicleta', a_pie:'A pie', otro:'Otro' }[vehiculo] || vehiculo;
+  const { error } = await db.from('chipas_postulaciones').insert({
+    nombre, dni, cel, localidad, vehiculo: vehiculoLabel, mensaje,
+    status: 'pendiente', created_at: new Date().toISOString()
+  });
+
+  btn.disabled = false; btn.textContent = 'Enviar postulación →';
+  if (error) {
+    errEl.textContent = 'No se pudo enviar. Revisá que exista la tabla chipas_postulaciones.';
+    errEl.style.display = 'block'; console.error(error); return;
+  }
+  document.getElementById('rep-post-form').style.display = 'none';
+  document.getElementById('rep-post-exito').style.display = 'block';
+}
+
+// Cargar localidades al iniciar la vista de repartidor (para el select de postulación)
+async function repLoadLocalidadesParaPostulacion() {
+  const { data } = await db.from('chipas_localidades').select('nombre').order('nombre');
+  window._localidades = data || [];
+}
+
+// -- Lado admin --
+async function loadAdminPostulaciones() {
+  const list = document.getElementById('admin-postulaciones-list');
+  if (!list) return;
+  list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Cargando...</div>';
+  const { data, error } = await db.from('chipas_postulaciones').select('*').order('created_at', { ascending: false });
+  const badge = document.getElementById('badge-postulaciones');
+  if (error || !data || !data.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:40px 0;text-align:center">📭 No hay postulaciones todavía.</div>';
+    if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
+    return;
+  }
+  const pendientes = data.filter(p => p.status === 'pendiente').length;
+  if (badge) { badge.textContent = pendientes; badge.style.display = pendientes > 0 ? 'inline-flex' : 'none'; }
+
+  const statusColor = { pendiente: 'var(--orange)', aceptado: 'var(--green)', rechazado: 'var(--red)' };
+  const statusLabel = { pendiente: '⏳ Pendiente', aceptado: '✅ Aceptado', rechazado: '❌ Rechazado' };
+  const vehiculoEmoji = { Moto:'🏍️', Auto:'🚗', Bicicleta:'🚲', 'A pie':'🚶', Otro:'🚚' };
+
+  list.innerHTML = data.map(p => {
+    const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const vEmoji = vehiculoEmoji[p.vehiculo] || '🚚';
+    const celLimpio = (p.cel || '').replace(/\D/g,'');
+    const wspMsg = encodeURIComponent(`Hola ${p.nombre}! Te contactamos desde el negocio. Revisamos tu postulación como repartidor y queremos coordinar los próximos pasos 🏍️`);
+    return `<div class="admin-turno-card" style="margin-bottom:12px">
+      <div class="admin-turno-header" style="align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="admin-turno-nombre">👤 ${repEsc(p.nombre)}</div>
+          <div class="admin-turno-fecha" style="margin-top:3px">🪪 DNI: ${repEsc(p.dni)} &nbsp;·&nbsp; 📱 ${repEsc(p.cel)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${repEsc(p.localidad)} &nbsp;·&nbsp; ${vEmoji} ${repEsc(p.vehiculo)}</div>
+          ${p.mensaje ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">"${repEsc(p.mensaje)}"</div>` : ''}
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${fecha}</div>
+          <div style="font-size:11px;font-weight:700;color:${statusColor[p.status]||'var(--muted)'};margin-top:4px">${statusLabel[p.status]||p.status}</div>
+        </div>
+        <div class="admin-turno-actions" style="flex-direction:column;gap:6px;align-items:stretch;min-width:130px">
+          <a href="https://wa.me/54${celLimpio}?text=${wspMsg}" target="_blank" style="display:block;padding:8px 12px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center;text-decoration:none">💬 WhatsApp</a>
+          ${p.status === 'pendiente' ? `
+          <button class="btn-turno-accept" onclick="adminPostulacion('${p.id}','aceptado')" style="width:100%">✅ Aceptar</button>
+          <button class="btn-turno-reject" onclick="adminPostulacion('${p.id}','rechazado')" style="width:100%">✕ Rechazar</button>
+          ` : `<button onclick="adminPostulacion('${p.id}','pendiente')" style="padding:6px 10px;background:var(--cream2);border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">↩ Volver a pendiente</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function adminPostulacion(id, nuevoStatus) {
+  const { error } = await db.from('chipas_postulaciones').update({ status: nuevoStatus }).eq('id', id);
+  if (error) { showToast('❌ Error al actualizar'); return; }
+  const label = { aceptado: 'Postulación aceptada', rechazado: 'Postulación rechazada', pendiente: 'Vuelto a pendiente' }[nuevoStatus] || 'Actualizado';
+  showToast('✅ ' + label);
+  loadAdminPostulaciones();
+}
+
+async function updatePostulacionesBadge() {
+  const { data } = await db.from('chipas_postulaciones').select('id').eq('status', 'pendiente');
+  const badge = document.getElementById('badge-postulaciones');
+  if (!badge) return;
+  const n = data?.length || 0;
+  badge.textContent = n;
+  badge.style.display = n > 0 ? 'inline-flex' : 'none';
 }
 
 // ===== START (after all declarations) =====
