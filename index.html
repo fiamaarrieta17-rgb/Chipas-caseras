@@ -2725,7 +2725,7 @@ async function submitOrder() {
   btn.disabled = false;
   btn.textContent = 'Hacer pedido →';
 
-  if (error) { showToast('❌ Error al enviar. Intentá de nuevo.'); console.error(error); return; }
+  if (error) { showToast('❌ ' + (error.message || 'Error al enviar. Intentá de nuevo.')); console.error('submitOrder error:', error); return; }
 
   myOrderId = orderId;
   sessionStorage.setItem('chipas_order_id', myOrderId);
