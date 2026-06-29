@@ -911,6 +911,95 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .rep-empty-state .icon { font-size: 48px; margin-bottom: 12px; }
 .rep-empty-state h3 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
 
+
+/* ===== REPARTIDOR CONFIG MODAL ===== */
+.rep-config-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  z-index: 700; display: none; align-items: flex-end; justify-content: center;
+}
+.rep-config-overlay.open { display: flex; }
+.rep-config-modal {
+  background: #fff; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  max-height: 88vh; overflow-y: auto;
+  padding: 24px 20px 32px;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.2);
+  animation: slideUp 0.22s ease;
+}
+.rep-config-title {
+  font-size: 17px; font-weight: 800; color: var(--navy);
+  margin-bottom: 4px;
+}
+.rep-config-sub {
+  font-size: 12px; color: var(--muted); margin-bottom: 20px;
+}
+.rep-config-section {
+  margin-bottom: 18px;
+}
+.rep-config-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.rep-config-section input,
+.rep-config-section textarea {
+  width: 100%; padding: 11px 13px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 14px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none;
+  transition: border-color 0.2s; margin-bottom: 8px;
+}
+.rep-config-section input:focus,
+.rep-config-section textarea:focus { border-color: var(--gold); background: #fff; }
+.rep-config-section textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+.rep-config-hint { font-size: 11px; color: var(--muted); margin-top: -4px; margin-bottom: 8px; }
+.rep-config-error { color: var(--red); font-size: 11px; margin-top: -4px; margin-bottom: 6px; display: none; }
+.rep-config-error.show { display: block; }
+.rep-config-zonas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.rep-zona-tag {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--cream2); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 4px 10px;
+  font-size: 12px; font-weight: 600; color: var(--navy);
+}
+.rep-zona-tag button {
+  background: none; border: none; color: var(--muted); font-size: 14px;
+  cursor: pointer; padding: 0 0 0 2px; line-height: 1;
+  transition: color 0.15s;
+}
+.rep-zona-tag button:hover { color: var(--red); }
+.rep-config-zona-input-row {
+  display: flex; gap: 6px;
+}
+.rep-config-zona-input-row input {
+  flex: 1; margin-bottom: 0 !important;
+}
+.rep-config-zona-input-row button {
+  flex-shrink: 0; padding: 11px 14px; background: var(--navy); color: #fff;
+  border: none; border-radius: 10px; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background 0.15s; white-space: nowrap;
+}
+.rep-config-zona-input-row button:hover { background: var(--gold); }
+.btn-rep-config-save {
+  width: 100%; padding: 14px; background: var(--gold); color: #fff;
+  border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+  margin-top: 4px;
+}
+.btn-rep-config-save:hover { background: #b8832e; }
+.btn-rep-config-save:disabled { background: #ccc; cursor: not-allowed; }
+.btn-rep-config-cancel {
+  width: 100%; padding: 12px; background: transparent; color: var(--muted);
+  border: none; font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; margin-top: 6px; text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.btn-rep-config-cancel:hover { color: var(--navy); }
+.btn-rep-settings {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.8); border-radius: 8px; padding: 5px 8px;
+  font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit;
+}
+.btn-rep-settings:hover { background: rgba(255,255,255,0.2); }
+
 /* ===== REPARTIDOR CHAT ===== */
 .rep-chat-fab {
   position: fixed; bottom: 24px; right: 20px; z-index: 500;
@@ -1217,6 +1306,11 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <label>NOMBRE COMPLETO</label>
         <input type="text" id="f-nombre" placeholder="Juan García" />
         <div class="error" id="e-nombre">Ingresá tu nombre</div>
+      </div>
+      <div class="form-group" id="campo-nombre-transferencia" style="display:none">
+        <label>NOMBRE PARA LA TRANSFERENCIA</label>
+        <input type="text" id="f-nombre-transferencia" placeholder="Ej: María García" />
+        <div class="error" id="e-nombre-transferencia">Ingresá el nombre titular de la cuenta</div>
       </div>
       <div class="form-group">
         <label>CELULAR</label>
@@ -1591,6 +1685,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div style="display:flex;gap:10px;align-items:center">
           <span id="rep-user-name" style="color:#fff;font-size:12px;opacity:.85"></span>
           <button class="btn-rep-refresh" onclick="repLoadOrders()" title="Actualizar">&#x1F504;</button>
+          <button class="btn-rep-settings" onclick="repOpenConfig()" title="Configuración">&#x2699;&#xFE0F;</button>
           <button class="btn-rep-logout" onclick="repDoLogout()">Salir</button>
         </div>
       </div>
@@ -1623,6 +1718,49 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
 
       <div id="rep-orders-container"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG MODAL (repartidor) -->
+  <div class="rep-config-overlay" id="rep-config-overlay" onclick="repConfigOverlayClick(event)">
+    <div class="rep-config-modal" id="rep-config-modal">
+      <div class="rep-config-title">⚙️ Mi configuración</div>
+      <div class="rep-config-sub">Solo vos podés cambiar esto. El admin no ve tu PIN.</div>
+
+      <div class="rep-config-section">
+        <div class="rep-config-section-label">Nombre para mostrar</div>
+        <input type="text" id="rep-cfg-nombre" placeholder="Ej: Marcos" />
+      </div>
+
+      <div class="rep-config-section">
+        <div class="rep-config-section-label">Cambiar PIN</div>
+        <input type="password" id="rep-cfg-pin-actual" placeholder="PIN actual" inputmode="numeric" maxlength="8" />
+        <div class="rep-config-error" id="rep-cfg-pin-error">PIN actual incorrecto</div>
+        <input type="password" id="rep-cfg-pin-nuevo" placeholder="PIN nuevo" inputmode="numeric" maxlength="8" />
+        <input type="password" id="rep-cfg-pin-confirmar" placeholder="Confirmá PIN nuevo" inputmode="numeric" maxlength="8" />
+        <div class="rep-config-error" id="rep-cfg-pin-mismatch">Los PINs nuevos no coinciden</div>
+        <div class="rep-config-hint">Dejá en blanco si no querés cambiar el PIN.</div>
+      </div>
+
+      <div class="rep-config-section">
+        <div class="rep-config-section-label">Zonas que repartís</div>
+        <div class="rep-config-zonas" id="rep-cfg-zonas-list"></div>
+        <div class="rep-config-zona-input-row">
+          <input type="text" id="rep-cfg-zona-input" placeholder="Ej: Morón, Palermo..." 
+            onkeydown="if(event.key==='Enter'){event.preventDefault();repCfgAddZona();}" />
+          <button onclick="repCfgAddZona()">+ Agregar</button>
+        </div>
+        <div class="rep-config-hint">Las zonas se muestran en tu perfil y le sirven al admin para asignarte pedidos.</div>
+      </div>
+
+      <div class="rep-config-section">
+        <div class="rep-config-section-label">Mensaje predeterminado de WhatsApp</div>
+        <textarea id="rep-cfg-wsp-msg" rows="3" placeholder="Hola {nombre}, soy el repartidor de {negocio}. Ya estoy en camino con tu pedido 🏍️"></textarea>
+        <div class="rep-config-hint">Usá <strong>{nombre}</strong> para el nombre del cliente y <strong>{negocio}</strong> para el nombre del local.</div>
+      </div>
+
+      <button class="btn-rep-config-save" id="btn-rep-cfg-save" onclick="repSaveConfig()">💾 Guardar cambios</button>
+      <button class="btn-rep-config-cancel" onclick="repCloseConfig()">Cancelar</button>
     </div>
   </div>
 
@@ -2149,6 +2287,12 @@ function isStoreOpenEffective() {
 function checkStoreClosed() {
   if (isAdmin) return;
   const banner = document.getElementById('closed-banner');
+  // Si el cliente ya está dejando un encargo o editando su pedido, no le toques el formulario
+  // (esto se re-evalúa cada 30s y en cada sync de configuración, y antes pisaba lo que estaba escribiendo)
+  if (modoEncargo || editMode) {
+    if (banner) banner.style.display = 'none';
+    return;
+  }
   const form = document.getElementById('order-form-card');
   const cart = document.getElementById('cart-summary');
   const submitBtn = document.getElementById('btn-submit');
@@ -2363,6 +2507,12 @@ function validate() {
     if (!val) { err.classList.add('show'); ok = false; }
     else err.classList.remove('show');
   });
+  if (selectedPaymentMethod === 'transferencia') {
+    const valTransf = document.getElementById('f-nombre-transferencia').value.trim();
+    const errTransf = document.getElementById('e-nombre-transferencia');
+    if (!valTransf) { errTransf.classList.add('show'); ok = false; }
+    else errTransf.classList.remove('show');
+  }
   const hasItems = prices.some(p => (quantities[p.id] || 0) > 0);
   if (!hasItems) { showToast('Seleccioná al menos un producto'); ok = false; }
   return ok;
@@ -2390,6 +2540,7 @@ async function submitOrder() {
     localidad: deliveryMethod === 'domicilio' ? document.getElementById('f-localidad').value.trim() : '',
     recargo,
     notas: document.getElementById('f-notas').value.trim(),
+    nombre_transferencia: selectedPaymentMethod === 'transferencia' ? document.getElementById('f-nombre-transferencia').value.trim() : '',
     items, total, status: 'pendiente',
     is_encargo: modoEncargo && !editMode,
     updated_at: new Date().toISOString(),
@@ -2454,6 +2605,12 @@ function selectPaymentMethod(method) {
     document.getElementById('pm-' + m)?.classList.toggle('selected', m === method);
     document.getElementById('panel-' + m).style.display = m === method ? 'block' : 'none';
   });
+  const campoTransf = document.getElementById('campo-nombre-transferencia');
+  if (campoTransf) campoTransf.style.display = method === 'transferencia' ? 'block' : 'none';
+  if (method !== 'transferencia') {
+    const inp = document.getElementById('f-nombre-transferencia');
+    if (inp) { inp.value = ''; document.getElementById('e-nombre-transferencia').classList.remove('show'); }
+  }
 }
 
 async function markAsPaid() {
@@ -2609,6 +2766,7 @@ async function editOrder() {
   document.getElementById('f-altura').value = order.altura || '';
   document.getElementById('f-localidad').value = order.localidad || '';
   document.getElementById('f-notas').value = order.notas || '';
+  document.getElementById('f-nombre-transferencia').value = order.nombre_transferencia || '';
   setDeliveryMethod(order.entrega || 'domicilio');
   quantities = {};
   order.items.forEach(i => { quantities[i.id] = i.qty; });
@@ -2810,6 +2968,7 @@ function renderAdminOrders() {
           </div>
         </div>`}
         ${order.notas ? `<div class="notes-box">💬 ${order.notas}</div>` : ''}
+        ${order.nombre_transferencia ? `<div class="notes-box" style="background:#fffbf3;border-left:3px solid var(--gold)">💳 Transferencia a nombre de: <strong>${order.nombre_transferencia}</strong></div>` : ''}
         <div class="order-items">
           ${order.items.map(i => `<div class="order-item-row"><span>${i.name} × ${i.qty}</span><span style="font-weight:600">${formatPrice(i.subtotal)}</span></div>`).join('')}
           ${order.recargo ? `<div class="order-item-row"><span>🏍️ Envío a domicilio</span><span style="font-weight:600">${formatPrice(order.recargo)}</span></div>` : ''}
@@ -4021,7 +4180,7 @@ async function repDoLogin() {
   btn.disabled = true;
   try {
     const { data, error } = await db.from('chipas_repartidores')
-      .select('id, usuario, nombre, pin, activo')
+      .select('id, usuario, nombre, pin, activo, zonas, wsp_msg')
       .ilike('usuario', usuario)
       .limit(1);
     if (error) throw error;
@@ -4033,7 +4192,7 @@ async function repDoLogin() {
       btn.disabled = false;
       return;
     }
-    repCurrentUser = { id: rep.id, usuario: rep.usuario, nombre: rep.nombre };
+    repCurrentUser = { id: rep.id, usuario: rep.usuario, nombre: rep.nombre, zonas: rep.zonas || [], wsp_msg: rep.wsp_msg || '' };
     sessionStorage.setItem(REP_USER_STORAGE_KEY, JSON.stringify(repCurrentUser));
     errEl.classList.remove('show');
     document.getElementById('view-rep-login').style.display = 'none';
@@ -4259,11 +4418,122 @@ async function repMarkEntregado(orderId) {
   }
 }
 
+
+// ===== REP CONFIG =====
+let repCfgZonas = [];
+
+function repOpenConfig() {
+  const u = repCurrentUser;
+  if (!u) return;
+  document.getElementById('rep-cfg-nombre').value = u.nombre || '';
+  document.getElementById('rep-cfg-pin-actual').value = '';
+  document.getElementById('rep-cfg-pin-nuevo').value = '';
+  document.getElementById('rep-cfg-pin-confirmar').value = '';
+  document.getElementById('rep-cfg-pin-error').classList.remove('show');
+  document.getElementById('rep-cfg-pin-mismatch').classList.remove('show');
+  // Zonas
+  repCfgZonas = Array.isArray(u.zonas) ? [...u.zonas] : (u.zonas ? String(u.zonas).split(',').map(z=>z.trim()).filter(Boolean) : []);
+  repCfgRenderZonas();
+  // Mensaje WSP
+  const defaultMsg = `Hola {nombre}, soy el repartidor de {negocio}. Ya estoy en camino con tu pedido 🏍️`;
+  document.getElementById('rep-cfg-wsp-msg').value = u.wsp_msg || defaultMsg;
+  document.getElementById('rep-config-overlay').classList.add('open');
+}
+
+function repCloseConfig() {
+  document.getElementById('rep-config-overlay').classList.remove('open');
+}
+
+function repConfigOverlayClick(e) {
+  if (e.target === document.getElementById('rep-config-overlay')) repCloseConfig();
+}
+
+function repCfgRenderZonas() {
+  const el = document.getElementById('rep-cfg-zonas-list');
+  if (!el) return;
+  if (!repCfgZonas.length) { el.innerHTML = '<span style="font-size:12px;color:var(--muted)">Sin zonas cargadas</span>'; return; }
+  el.innerHTML = repCfgZonas.map((z, i) =>
+    `<span class="rep-zona-tag">${repEsc(z)}<button onclick="repCfgRemoveZona(${i})" title="Quitar">✕</button></span>`
+  ).join('');
+}
+
+function repCfgAddZona() {
+  const inp = document.getElementById('rep-cfg-zona-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  const nuevas = val.split(',').map(z => z.trim()).filter(z => z && !repCfgZonas.includes(z));
+  repCfgZonas.push(...nuevas);
+  inp.value = '';
+  repCfgRenderZonas();
+}
+
+function repCfgRemoveZona(idx) {
+  repCfgZonas.splice(idx, 1);
+  repCfgRenderZonas();
+}
+
+async function repSaveConfig() {
+  const btn = document.getElementById('btn-rep-cfg-save');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const nombreNuevo = document.getElementById('rep-cfg-nombre').value.trim() || repCurrentUser.nombre;
+  const pinActual = document.getElementById('rep-cfg-pin-actual').value.trim();
+  const pinNuevo = document.getElementById('rep-cfg-pin-nuevo').value.trim();
+  const pinConfirmar = document.getElementById('rep-cfg-pin-confirmar').value.trim();
+  const wspMsg = document.getElementById('rep-cfg-wsp-msg').value.trim();
+
+  // Reset errors
+  document.getElementById('rep-cfg-pin-error').classList.remove('show');
+  document.getElementById('rep-cfg-pin-mismatch').classList.remove('show');
+
+  let updates = {
+    nombre: nombreNuevo,
+    zonas: repCfgZonas,
+    wsp_msg: wspMsg
+  };
+
+  // PIN change flow
+  if (pinNuevo || pinConfirmar || pinActual) {
+    // Validate PIN actual against DB
+    const { data } = await db.from('chipas_repartidores').select('pin').eq('id', repCurrentUser.id).single();
+    if (!data || String(data.pin) !== pinActual) {
+      document.getElementById('rep-cfg-pin-error').classList.add('show');
+      btn.disabled = false; btn.textContent = '💾 Guardar cambios';
+      return;
+    }
+    if (pinNuevo !== pinConfirmar) {
+      document.getElementById('rep-cfg-pin-mismatch').classList.add('show');
+      btn.disabled = false; btn.textContent = '💾 Guardar cambios';
+      return;
+    }
+    if (pinNuevo) updates.pin = pinNuevo;
+  }
+
+  const { error } = await db.from('chipas_repartidores').update(updates).eq('id', repCurrentUser.id);
+  btn.disabled = false; btn.textContent = '💾 Guardar cambios';
+
+  if (error) { showToast('❌ No se pudo guardar. Intentá de nuevo.'); console.error(error); return; }
+
+  // Update local session
+  repCurrentUser = { ...repCurrentUser, nombre: nombreNuevo, zonas: repCfgZonas, wsp_msg: wspMsg };
+  sessionStorage.setItem(REP_USER_STORAGE_KEY, JSON.stringify(repCurrentUser));
+
+  // Update name in header
+  const nameEl = document.getElementById('rep-user-name');
+  if (nameEl) nameEl.textContent = repCurrentUser.nombre ? ('👤 ' + repCurrentUser.nombre) : '';
+
+  showToast('✅ Configuración guardada');
+  repCloseConfig();
+}
+
 function repOpenWhatsApp(cel, nombre) {
   const num = cel.replace(/\D/g, '');
   const intl = num.startsWith('54') ? num : '54' + num;
-  const msg = encodeURIComponent(`Hola ${nombre}, soy el repartidor. Ya estoy en camino con tu pedido`);
-  window.open(`https://wa.me/${intl}?text=${msg}`, '_blank');
+  const negocio = (typeof settings !== 'undefined' && settings.business_name) ? settings.business_name : 'el negocio';
+  const defaultMsg = `Hola {nombre}, soy el repartidor de {negocio}. Ya estoy en camino con tu pedido 🏍️`;
+  const template = (repCurrentUser && repCurrentUser.wsp_msg) ? repCurrentUser.wsp_msg : defaultMsg;
+  const finalMsg = template.replace(/\{nombre\}/g, nombre).replace(/\{negocio\}/g, negocio);
+  window.open(`https://wa.me/${intl}?text=${encodeURIComponent(finalMsg)}`, '_blank');
 }
 
 function repOpenMaps(address) {
