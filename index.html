@@ -1474,6 +1474,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div id="post-order-actions" style="display:none">
       <button id="btn-edit-order" class="edit-btn" onclick="editOrder()">✏️ Modificar mi pedido</button>
       <button id="btn-cancel-order" class="cancel-btn" onclick="cancelOrder()">✕ Cancelar pedido</button>
+      <div id="edit-extra-hint" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:var(--cream2);border-radius:8px;border:1px solid var(--border);line-height:1.5"></div>
       <div id="edit-locked-msg" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:#fff3e0;border-radius:8px;border:1px solid #ffe0b2">🏍️ Tu pedido ya salió, no se puede modificar</div>
     </div>
   </div>
@@ -2991,12 +2992,31 @@ function updateStatusTracker(order) {
   const editBtn = document.getElementById('btn-edit-order');
   const cancelBtn = document.getElementById('btn-cancel-order');
   const editLocked = document.getElementById('edit-locked-msg');
+  const editHint = document.getElementById('edit-extra-hint');
   if (editBtn) editBtn.style.display = canEdit ? 'inline-block' : 'none';
   if (cancelBtn) cancelBtn.style.display = canEdit ? 'inline-block' : 'none';
   if (editLocked) {
     if (order.status === 'en_camino') { editLocked.style.display = 'block'; editLocked.textContent = '🏍️ Tu pedido ya salió, no se puede modificar'; }
     else if (order.status === 'modificado_pago_pendiente') { editLocked.style.display = 'block'; editLocked.textContent = '⚠️ Pedido modificado · Esperando tu pago de la diferencia'; }
     else editLocked.style.display = 'none';
+  }
+  if (editHint) {
+    if (canEdit && order.pago_avisado) {
+      const extraProd = Number(settings.extra_modificacion) || 0;
+      const extraLoc = Number(settings.extra_cambio_localidad) || 0;
+      const parts = [];
+      if (extraProd > 0) parts.push(`agregar productos: <strong>+${formatPrice(extraProd)}</strong>`);
+      if (extraLoc > 0) parts.push(`cambiar dirección/localidad: <strong>+${formatPrice(extraLoc)}</strong>`);
+      editHint.style.display = 'block';
+      editHint.innerHTML = parts.length
+        ? `💡 Como ya confirmaste el pago, modificar tiene un extra: ${parts.join(' · ')}`
+        : `💡 Podés modificar tu pedido sin cargo extra.`;
+    } else if (canEdit) {
+      editHint.style.display = 'block';
+      editHint.innerHTML = `✏️ Todavía no confirmaste el pago, así que podés modificar tu pedido sin cargo extra.`;
+    } else {
+      editHint.style.display = 'none';
+    }
   }
 
   paymentCard.classList.toggle('visible', showPayment);
