@@ -1414,6 +1414,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
     <div class="form-card" id="order-form-card">
       <h2>📦 Tus datos de entrega</h2>
+      <div id="edit-mode-extra-banner" style="display:none;font-size:12px;color:#92400e;background:#fff3cd;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.5"></div>
       <div class="form-group">
         <label>¿CÓMO QUERÉS RECIBIR TU PEDIDO?</label>
         <div class="delivery-options">
@@ -1469,6 +1470,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <textarea id="f-notas" placeholder="Ej: dejar en portería, llamar al llegar..."></textarea>
       </div>
       <button class="btn-submit" id="btn-submit" onclick="submitOrder()">Hacer pedido →</button>
+      <button id="btn-cancel-edit" onclick="cancelEditForm()" style="display:none;width:100%;padding:10px;background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit;margin-top:6px;text-decoration:underline;text-underline-offset:2px">Cancelar edición y volver</button>
     </div>
 
     <div id="post-order-actions" style="display:none">
@@ -2744,90 +2746,100 @@ async function submitOrder() {
   const btn = document.getElementById('btn-submit');
   btn.disabled = true; btn.textContent = 'Enviando...';
 
-  const items = prices.filter(p => (quantities[p.id]||0) > 0).map(p => ({
-    id: p.id, name: p.name, qty: quantities[p.id], price: p.price, subtotal: p.price * quantities[p.id]
-  }));
-  const recargo = (deliveryMethod === 'domicilio') ? getLocalidadFee() : 0;
-  const total = items.reduce((s,i) => s + i.subtotal, 0) + recargo;
-  const orderId = (editMode && myOrderId) ? myOrderId : genId();
+  try {
+    const items = prices.filter(p => (quantities[p.id]||0) > 0).map(p => ({
+      id: p.id, name: p.name, qty: quantities[p.id], price: p.price, subtotal: p.price * quantities[p.id]
+    }));
+    const recargo = (deliveryMethod === 'domicilio') ? getLocalidadFee() : 0;
+    const total = items.reduce((s,i) => s + i.subtotal, 0) + recargo;
+    const orderId = (editMode && myOrderId) ? myOrderId : genId();
 
-  const order = {
-    id: orderId,
-    nombre: document.getElementById('f-nombre').value.trim(),
-    cel: document.getElementById('f-cel').value.trim(),
-    entrega: deliveryMethod,
-    calle: deliveryMethod === 'domicilio' ? document.getElementById('f-calle').value.trim() : '',
-    altura: deliveryMethod === 'domicilio' ? document.getElementById('f-altura').value.trim() : '',
-    localidad: deliveryMethod === 'domicilio' ? document.getElementById('f-localidad').value.trim() : '',
-    recargo,
-    notas: document.getElementById('f-notas').value.trim(),
-    nombre_transferencia: selectedPaymentMethod === 'transferencia' ? document.getElementById('f-nombre-transferencia').value.trim() : '',
-    items, total,
-    ...(editMode ? {} : { status: 'pendiente' }),
-    ...(editMode ? { modificacion_extra: calcModificacionExtra(order) } : {}),
-    is_encargo: modoEncargo && !editMode,
-    updated_at: new Date().toISOString(),
-    edited_at: editMode ? new Date().toISOString() : null
-  };
+    const order = {
+      id: orderId,
+      nombre: document.getElementById('f-nombre').value.trim(),
+      cel: document.getElementById('f-cel').value.trim(),
+      entrega: deliveryMethod,
+      calle: deliveryMethod === 'domicilio' ? document.getElementById('f-calle').value.trim() : '',
+      altura: deliveryMethod === 'domicilio' ? document.getElementById('f-altura').value.trim() : '',
+      localidad: deliveryMethod === 'domicilio' ? document.getElementById('f-localidad').value.trim() : '',
+      recargo,
+      notas: document.getElementById('f-notas').value.trim(),
+      nombre_transferencia: selectedPaymentMethod === 'transferencia' ? document.getElementById('f-nombre-transferencia').value.trim() : '',
+      items, total,
+      ...(editMode ? {} : { status: 'pendiente' }),
+      is_encargo: modoEncargo && !editMode,
+      updated_at: new Date().toISOString(),
+      edited_at: editMode ? new Date().toISOString() : null
+    };
 
-  // Detect modification type for already-paid orders in editMode
-  if (editMode && myOrderId) {
-    const { data: prevOrder } = await db.from('chipas_orders').select('*').eq('id', myOrderId).single();
-    if (prevOrder && prevOrder.pago_avisado) {
-      const modType = detectModificationType(prevOrder, order);
-      if (modType.agregaProductos || modType.cambiaLugar) {
-        order.status = 'modificado_pago_pendiente';
-        order.modificacion_tipo = modType.tipo;
-        order.modificacion_extra = modType.extra;
-        order.total_original = prevOrder.total;
-        order.diferencia_pago = order.total + modType.extra - prevOrder.total;
-        order.pago_avisado = false; // requiere nuevo aviso de pago
-      } else if (modType.sacaProductos) {
-        order.modificacion_tipo = 'devolucion';
-        order.devolucion_monto = prevOrder.total - order.total;
-        order.devolucion_pendiente = true;
-        // notify admin
-        await db.from('chipas_notificaciones').insert({
-          repartidor_id: 'admin',
-          tipo: 'devolucion_pendiente',
-          mensaje: `💸 ${prevOrder.nombre} sacó productos. Debés devolver ${formatPrice(prevOrder.total - order.total)}.`,
-          leida: false, created_at: new Date().toISOString(), order_id: myOrderId
-        }).catch(() => {});
+    // Detect modification type for already-paid orders in editMode
+    if (editMode && myOrderId) {
+      const { data: prevOrder } = await db.from('chipas_orders').select('*').eq('id', myOrderId).single();
+      if (prevOrder && prevOrder.pago_avisado) {
+        const modType = detectModificationType(prevOrder, order);
+        if (modType.agregaProductos || modType.cambiaLugar) {
+          order.status = 'modificado_pago_pendiente';
+          order.modificacion_tipo = modType.tipo;
+          order.modificacion_extra = modType.extra;
+          order.total_original = prevOrder.total;
+          order.diferencia_pago = order.total + modType.extra - prevOrder.total;
+          order.pago_avisado = false; // requiere nuevo aviso de pago
+        } else if (modType.sacaProductos) {
+          order.modificacion_tipo = 'devolucion';
+          order.devolucion_monto = prevOrder.total - order.total;
+          order.devolucion_pendiente = true;
+          // notify admin
+          await db.from('chipas_notificaciones').insert({
+            repartidor_id: 'admin',
+            tipo: 'devolucion_pendiente',
+            mensaje: `💸 ${prevOrder.nombre} sacó productos. Debés devolver ${formatPrice(prevOrder.total - order.total)}.`,
+            leida: false, created_at: new Date().toISOString(), order_id: myOrderId
+          }).catch(() => {});
+        }
       }
     }
+
+    let error;
+    if (editMode && myOrderId) {
+      ({ error } = await db.from('chipas_orders').update(order).eq('id', orderId));
+    } else {
+      order.created_at = new Date().toISOString();
+      ({ error } = await db.from('chipas_orders').insert(order));
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Hacer pedido →';
+
+    if (error) { showToast('❌ ' + (error.message || 'Error al enviar. Intentá de nuevo.')); console.error('submitOrder error:', error); return; }
+
+    myOrderId = orderId;
+    sessionStorage.setItem('chipas_order_id', myOrderId);
+    localStorage.setItem('chipas_order_id', myOrderId);
+    const wasEditMode = editMode;
+    editMode = false;
+
+    document.getElementById('order-form-card').style.display = 'none';
+    document.getElementById('success-msg').classList.add('visible');
+    document.getElementById('success-msg').querySelector('h3').textContent = wasEditMode ? '✅ ¡Pedido actualizado!' : modoEncargo ? '📝 ¡Encargo recibido!' : '✅ ¡Pedido enviado!';
+    document.getElementById('success-msg').querySelector('p').textContent = wasEditMode ? 'Tus cambios fueron guardados 💛' : modoEncargo ? 'Te avisamos cuando lo aceptemos 💛' : 'Te avisamos cuando esté listo 💛';
+    document.getElementById('post-order-actions').style.display = 'block';
+    document.getElementById('btn-submit').textContent = 'Hacer pedido →';
+    document.getElementById('btn-submit').style.background = '';
+    const btnCancelEditDone = document.getElementById('btn-cancel-edit');
+    if (btnCancelEditDone) btnCancelEditDone.style.display = 'none';
+    const formBannerDone = document.getElementById('edit-mode-extra-banner');
+    if (formBannerDone) formBannerDone.style.display = 'none';
+    modoEncargo = false;
+    showTrackingLink(orderId);
+    showToast(modoEncargo ? '📝 ¡Encargo enviado!' : '✅ ¡Pedido enviado!');
+    requestNotificationPermission();
+    checkMyOrder();
+  } catch (e) {
+    console.error('submitOrder excepción:', e);
+    btn.disabled = false;
+    btn.textContent = editMode ? 'Actualizar pedido →' : 'Hacer pedido →';
+    showToast('❌ Algo falló al guardar. Intentá de nuevo.');
   }
-
-  let error;
-  if (editMode && myOrderId) {
-    ({ error } = await db.from('chipas_orders').update(order).eq('id', orderId));
-  } else {
-    order.created_at = new Date().toISOString();
-    ({ error } = await db.from('chipas_orders').insert(order));
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Hacer pedido →';
-
-  if (error) { showToast('❌ ' + (error.message || 'Error al enviar. Intentá de nuevo.')); console.error('submitOrder error:', error); return; }
-
-  myOrderId = orderId;
-  sessionStorage.setItem('chipas_order_id', myOrderId);
-  localStorage.setItem('chipas_order_id', myOrderId);
-  const wasEditMode = editMode;
-  editMode = false;
-
-  document.getElementById('order-form-card').style.display = 'none';
-  document.getElementById('success-msg').classList.add('visible');
-  document.getElementById('success-msg').querySelector('h3').textContent = wasEditMode ? '✅ ¡Pedido actualizado!' : modoEncargo ? '📝 ¡Encargo recibido!' : '✅ ¡Pedido enviado!';
-  document.getElementById('success-msg').querySelector('p').textContent = wasEditMode ? 'Tus cambios fueron guardados 💛' : modoEncargo ? 'Te avisamos cuando lo aceptemos 💛' : 'Te avisamos cuando esté listo 💛';
-  document.getElementById('post-order-actions').style.display = 'block';
-  document.getElementById('btn-submit').textContent = 'Hacer pedido →';
-  document.getElementById('btn-submit').style.background = '';
-  modoEncargo = false;
-  showTrackingLink(orderId);
-  showToast(modoEncargo ? '📝 ¡Encargo enviado!' : '✅ ¡Pedido enviado!');
-  requestNotificationPermission();
-  checkMyOrder();
 }
 
 function showTrackingLink(orderId) {
@@ -3087,9 +3099,44 @@ async function editOrder() {
   renderProducts();
   document.getElementById('order-form-card').style.display = 'block';
   document.getElementById('success-msg').classList.remove('visible');
-  document.getElementById('btn-submit').textContent = 'Actualizar pedido →';
+  // Ocultar los botones de "Modificar/Cancelar" mientras el formulario está abierto,
+  // para que no se pueda re-disparar editOrder() por error y resetear lo que ya cambiaste.
+  document.getElementById('post-order-actions').style.display = 'none';
+  const btnSubmit = document.getElementById('btn-submit');
+  btnSubmit.disabled = false; // por si había quedado deshabilitado por "tienda cerrada"
+  btnSubmit.textContent = 'Actualizar pedido →';
+  const btnCancelEdit = document.getElementById('btn-cancel-edit');
+  if (btnCancelEdit) btnCancelEdit.style.display = 'inline-block';
+  const formBanner = document.getElementById('edit-mode-extra-banner');
+  if (formBanner) {
+    if (order.pago_avisado) {
+      const extraProd = Number(settings.extra_modificacion) || 0;
+      const extraLoc = Number(settings.extra_cambio_localidad) || 0;
+      const parts = [];
+      if (extraProd > 0) parts.push(`agregar productos: <strong>+${formatPrice(extraProd)}</strong>`);
+      if (extraLoc > 0) parts.push(`cambiar dirección/localidad: <strong>+${formatPrice(extraLoc)}</strong>`);
+      formBanner.style.display = parts.length ? 'block' : 'none';
+      formBanner.innerHTML = `⚠️ Ya confirmaste el pago de este pedido. Si lo modificás ahora se suma un extra — ${parts.join(' · ')}. Te vamos a pedir que transfieras esa diferencia.`;
+    } else {
+      formBanner.style.display = 'none';
+    }
+  }
   document.getElementById('order-form-card').scrollIntoView({ behavior: 'smooth' });
 }
+
+function cancelEditForm() {
+  editMode = false;
+  document.getElementById('order-form-card').style.display = 'none';
+  document.getElementById('btn-submit').textContent = 'Hacer pedido →';
+  const btnCancelEdit = document.getElementById('btn-cancel-edit');
+  if (btnCancelEdit) btnCancelEdit.style.display = 'none';
+  const formBanner = document.getElementById('edit-mode-extra-banner');
+  if (formBanner) formBanner.style.display = 'none';
+  document.getElementById('success-msg').classList.add('visible');
+  document.getElementById('post-order-actions').style.display = 'block';
+  checkMyOrder();
+}
+
 
 async function cancelOrder() {
   if (!confirm('¿Cancelar tu pedido?')) return;
@@ -3105,6 +3152,10 @@ async function cancelOrder() {
   document.getElementById('payment-card').classList.remove('visible');
   document.getElementById('order-form-card').style.display = 'block';
   document.getElementById('btn-submit').textContent = 'Hacer pedido →';
+  const btnCancelEditX = document.getElementById('btn-cancel-edit');
+  if (btnCancelEditX) btnCancelEditX.style.display = 'none';
+  const formBannerX = document.getElementById('edit-mode-extra-banner');
+  if (formBannerX) formBannerX.style.display = 'none';
   renderProducts();
   showToast('❌ Pedido cancelado');
 }
