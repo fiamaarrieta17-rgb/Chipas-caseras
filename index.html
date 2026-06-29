@@ -2170,6 +2170,19 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 <div class="toast" id="toast"></div>
 
 <script>
+// ===== SEGURIDAD: silenciar consola en producción =====
+(function() {
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!isLocal) {
+    const noop = () => {};
+    console.log = noop;
+    console.warn = noop;
+    console.error = noop;
+    console.info = noop;
+    console.debug = noop;
+  }
+})();
+
 // ===== SUPABASE =====
 const SUPA_URL = 'https://nsxdwaxduidqlliiogqp.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zeGR3YXhkdWlkcWxsaWlvZ3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTU2NzIsImV4cCI6MjA5NzA3MTY3Mn0.CSK-8EdPhYUBHpVzxsg-dw7m7aRJc77bwhpz1lFIPok';
@@ -2194,13 +2207,13 @@ if (isRepartidor) {
 }
 
 // ===== AUTH =====
-const DEFAULT_PASSWORD = 'chipas2026';
+// ⚠️ No hardcodear contraseñas aquí. Se cargan desde Supabase (chipas_settings).
 let adminUnlocked = false;
 let lastKnownOrderCount = -1;
 
 // Credenciales en memoria, cargadas desde Supabase (chipas_settings)
 // No se guardan en localStorage para que funcionen en cualquier dispositivo
-function getStoredPassword() { return settings.admin_password || DEFAULT_PASSWORD; }
+function getStoredPassword() { return settings.admin_password || null; }
 function getStoredDni() { return settings.admin_dni || ''; }
 function getStoredPin() { return settings.admin_pin || ''; }
 
@@ -2214,7 +2227,13 @@ function switchLoginTab(tab) {
 function doLogin() {
   const entered = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error-pass');
-  if (entered === getStoredPassword()) {
+  const stored = getStoredPassword();
+  if (!stored) {
+    errEl.textContent = 'No se pudo cargar la configuración. Recargá la página.';
+    errEl.classList.add('show');
+    return;
+  }
+  if (entered === stored) {
     errEl.classList.remove('show');
     adminUnlocked = true;
     localStorage.setItem('chipas_admin_unlocked', '1');
