@@ -1595,7 +1595,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div class="nav-item" id="nav-precios" onclick="showAdminPanel('precios')">💰 Productos y Precios</div>
         <div class="nav-item" id="nav-historial" onclick="showAdminPanel('historial')">📊 Historial de ganancias</div>
         <div class="nav-item" id="nav-resenas" onclick="showAdminPanel('resenas')">⭐ Reseñas de clientes</div>
-        <div class="nav-item" id="nav-turnos" onclick="showAdminPanel('turnos')">📅 Turnos de repartidores <span class="badge" id="badge-turnos" style="display:none">0</span></div>
+        <div class="nav-item" id="nav-turnos" onclick="showAdminPanel('turnos')">🏍️ Repartidores <span class="badge" id="badge-turnos" style="display:none">0</span></div>
         <div class="nav-item" id="nav-postulaciones" onclick="showAdminPanel('postulaciones')">📋 Postulaciones <span class="badge" id="badge-postulaciones" style="display:none">0</span></div>
         <div class="nav-label">Negocio</div>
         <div class="nav-item" id="nav-config" onclick="showAdminPanel('config')">⚙️ Configuración</div>
@@ -1661,6 +1661,15 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
         <!-- TURNOS DE REPARTIDORES -->
         <div id="admin-panel-turnos" style="display:none">
+          <!-- REPARTIDORES (usuario + PIN, multi-usuario) -->
+          <div class="config-card" style="max-width:560px;margin-top:0;margin-bottom:20px">
+            <h2>🏍️ Acceso repartidor</h2>
+            <div class="config-intro">Cada repartidor entra con su propio usuario y PIN a su panel exclusivo (<code>?repartidor</code>). Podés agregar más cuando quieras y desactivarlos sin borrarlos.</div>
+            <button onclick="goToRepView()" style="width:100%;margin-bottom:14px;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">🏍️ Abrir panel repartidor (nueva pestaña)</button>
+            <div class="localidades-list" id="rep-users-list"></div>
+            <button class="btn-add-localidad" onclick="addRepUserRow()">+ Agregar repartidor</button>
+            <button class="btn-save-prices" onclick="saveRepUsers()" style="margin-top:10px">💾 Guardar repartidores</button>
+          </div>
           <div style="background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:20px;max-width:560px;margin-bottom:20px">
             <h2 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px">📢 Proponer horario para repartidores</h2>
             <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Publicá un horario disponible. A los repartidores activos les llega una notificación para postularse.</p>
@@ -1797,16 +1806,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
             <button class="btn-add-localidad" onclick="addLocalidadRow()">+ Agregar localidad</button>
             <button class="btn-save-prices" onclick="saveLocalidades()" style="margin-top:14px">💾 Guardar localidades</button>
           </div>
-          <!-- REPARTIDORES (usuario + PIN, multi-usuario) -->
-          <div class="config-card" style="max-width:480px;margin-top:0">
-            <h2>🏍️ Acceso repartidor</h2>
-            <div class="config-intro">Cada repartidor entra con su propio usuario y PIN a su panel exclusivo (<code>?repartidor</code>). Podés agregar más cuando quieras y desactivarlos sin borrarlos.</div>
-            <button onclick="goToRepView()" style="width:100%;margin-bottom:14px;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">🏍️ Abrir panel repartidor (nueva pestaña)</button>
-            <div class="localidades-list" id="rep-users-list"></div>
-            <button class="btn-add-localidad" onclick="addRepUserRow()">+ Agregar repartidor</button>
-            <button class="btn-save-prices" onclick="saveRepUsers()" style="margin-top:10px">💾 Guardar repartidores</button>
-          </div>
-
         </div><!-- /admin-panel-config -->
 
         <!-- SEGURIDAD -->
@@ -2458,7 +2457,6 @@ function renderConfigPanel() {
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
   loadLocalidadesAdmin();
-  loadRepUsersAdmin();
   renderStoreModeUI();
   previewConfig();
 }
@@ -3709,7 +3707,7 @@ function filterOrders(status, el) {
 let localPrices = []; // edited copies
 let deletedIds = new Set();
 
-const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Turnos de repartidores', devoluciones: 'Devoluciones pendientes', postulaciones: 'Postulaciones de repartidores', config: 'Configuración', seguridad: 'Seguridad' };
+const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Repartidores', devoluciones: 'Devoluciones pendientes', postulaciones: 'Postulaciones de repartidores', config: 'Configuración', seguridad: 'Seguridad' };
 async function showAdminPanel(panel) {
   ['pedidos','precios','historial','resenas','turnos','devoluciones','postulaciones','config','seguridad'].forEach(p => {
     document.getElementById('admin-panel-' + p).style.display = p === panel ? 'block' : 'none';
@@ -6093,6 +6091,7 @@ let ofertaFechaFormInited = false;
 async function loadAdminTurnos() {
   loadAdminZonasExtra();
   loadAdminVacantes();
+  loadRepUsersAdmin();
   if (!ofertaFechaFormInited) { ofertaFechaFormInited = true; buildOfertaFechasUI(); }
   const list = document.getElementById('admin-turnos-list');
   if (!list) return;
