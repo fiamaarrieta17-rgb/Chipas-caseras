@@ -3035,7 +3035,8 @@ function updateStatusTracker(order) {
   if (showPayment) {
     // Show diff amount if modified order awaiting payment
     const diffBanner = document.getElementById('payment-diff-banner');
-    if (order.status === 'modificado_pago_pendiente' && order.diferencia_pago > 0) {
+    const isDiffPending = order.status === 'modificado_pago_pendiente' && order.diferencia_pago > 0;
+    if (isDiffPending) {
       if (diffBanner) {
         diffBanner.style.display = 'block';
         diffBanner.innerHTML = `<strong>⚠️ Tu pedido fue modificado.</strong><br>Debés transferir la diferencia de <strong>${formatPrice(order.diferencia_pago)}</strong> adicional al mismo alias.`;
@@ -3049,7 +3050,10 @@ function updateStatusTracker(order) {
       selectPaymentMethod('efectivo');
     } else {
       selectPaymentMethod('transferencia');
-      document.getElementById('payment-amount').innerHTML = `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
+      // No pisar el mensaje de "transferí la diferencia" con el del total completo
+      if (!isDiffPending) {
+        document.getElementById('payment-amount').innerHTML = `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
+      }
       renderPaymentBox();
     }
     const btnPagar = document.getElementById('btn-ya-pague');
