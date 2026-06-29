@@ -1389,6 +1389,11 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           <button class="copy-btn" onclick="copyAlias()">📋 Copiar</button>
         </div>
         <div class="payment-titular" id="payment-titular"></div>
+        <div class="form-group" id="campo-nombre-transferencia" style="margin:12px 0 4px">
+          <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">¿TRANSFERÍS DESDE OTRA CUENTA? <span style="font-weight:400">(opcional)</span></label>
+          <input type="text" id="f-nombre-transferencia" placeholder="Nombre del titular si no es el tuyo" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none" />
+          <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px">Dejalo vacío si transferís desde tu propia cuenta.</div>
+        </div>
         <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
         <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
         <p class="payment-hint">Una vez que transferís, te confirmamos el pedido.</p>
@@ -1427,12 +1432,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <label>NOMBRE COMPLETO</label>
         <input type="text" id="f-nombre" placeholder="Juan García" />
         <div class="error" id="e-nombre">Ingresá tu nombre</div>
-      </div>
-      <div class="form-group" id="campo-nombre-transferencia" style="display:none">
-        <label>NOMBRE EN LA TRANSFERENCIA <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
-        <input type="text" id="f-nombre-transferencia" placeholder="Solo si va a otro nombre que el tuyo" />
-        <div class="hint">Dejalo vacío si transferís desde tu propia cuenta.</div>
-        <div class="error" id="e-nombre-transferencia">Ingresá el nombre titular de la cuenta</div>
       </div>
       <div class="form-group">
         <label>CELULAR</label>
@@ -2766,11 +2765,9 @@ function selectPaymentMethod(method) {
     document.getElementById('pm-' + m)?.classList.toggle('selected', m === method);
     document.getElementById('panel-' + m).style.display = m === method ? 'block' : 'none';
   });
-  const campoTransf = document.getElementById('campo-nombre-transferencia');
-  if (campoTransf) campoTransf.style.display = method === 'transferencia' ? 'block' : 'none';
   if (method !== 'transferencia') {
     const inp = document.getElementById('f-nombre-transferencia');
-    if (inp) { inp.value = ''; document.getElementById('e-nombre-transferencia').classList.remove('show'); }
+    if (inp) inp.value = '';
   }
 }
 
