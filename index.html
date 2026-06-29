@@ -95,6 +95,28 @@ button, input, textarea { font-family: inherit; }
 .loc-col-labels span:first-child { flex: 2; }
 .loc-col-labels span:last-child { flex: 1; text-align: right; }
 
+/* ===== REPARTIDORES (multi-usuario) ===== */
+.rep-user-card {
+  background: var(--cream); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.rep-user-row1 { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.rep-user-row1 input {
+  flex: 1; min-width: 80px; border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; font-family: inherit; background: #fff;
+  color: var(--text); outline: none; transition: border-color 0.15s;
+}
+.rep-user-row1 input:focus { border-color: var(--gold); }
+.rep-user-row2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rep-user-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+.rep-user-toggle input { cursor: pointer; }
+.btn-del-rep {
+  background: none; border: none; color: var(--red); font-size: 12px;
+  cursor: pointer; padding: 4px 8px; font-family: inherit; border-radius: 6px;
+  transition: background 0.15s;
+}
+.btn-del-rep:hover { background: #fdecea; }
+
 /* ===== RESEÑAS ===== */
 .review-section {
   background: #fff; border: 1.5px solid var(--border); border-radius: 16px;
@@ -1430,16 +1452,13 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
           </div><!-- /config-card horario -->
-          <!-- PIN REPARTIDOR -->
+          <!-- REPARTIDORES (usuario + PIN, multi-usuario) -->
           <div class="config-card" style="max-width:480px;margin-top:0">
             <h2>🛵 Acceso repartidor</h2>
-            <div class="config-intro">El repartidor entra con este PIN a su panel exclusivo (<code>repartidor.html</code>). Cambialo cuando quieras.</div>
-            <div class="form-group">
-              <label>PIN REPARTIDOR</label>
-              <input type="text" id="cfg-rep-pin" placeholder="Ej: 5678" maxlength="8" inputmode="numeric" />
-              <div class="hint">Solo números. Por defecto es 1234.</div>
-            </div>
-            <button class="btn-save-prices" onclick="saveRepPin()">💾 Guardar PIN</button>
+            <div class="config-intro">Cada repartidor entra con su propio usuario y PIN a su panel exclusivo (<code>?repartidor</code>). Podés agregar más cuando quieras y desactivarlos sin borrarlos.</div>
+            <div class="localidades-list" id="rep-users-list"></div>
+            <button class="btn-add-localidad" onclick="addRepUserRow()">+ Agregar repartidor</button>
+            <button class="btn-save-prices" onclick="saveRepUsers()" style="margin-top:10px">💾 Guardar repartidores</button>
           </div>
 
         </div><!-- /admin-panel-config -->
@@ -1547,14 +1566,19 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div class="rep-login-box">
       <div class="rep-login-icon">🛵</div>
       <div class="rep-login-title">Panel <span>Repartidor</span></div>
-      <div class="rep-login-sub">Ingresá tu PIN de repartidor para continuar</div>
+      <div class="rep-login-sub">Ingresá tu usuario y PIN para continuar</div>
+      <div class="rep-form-group">
+        <label>Usuario</label>
+        <input type="text" id="rep-login-usuario" placeholder="Tu usuario" autocomplete="username"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('rep-login-pin').focus();}" />
+      </div>
       <div class="rep-form-group">
         <label>PIN de acceso</label>
-        <input type="password" id="rep-login-pin" placeholder="••••••" inputmode="numeric" maxlength="8"
+        <input type="password" id="rep-login-pin" placeholder="••••••" inputmode="numeric" maxlength="8" autocomplete="current-password"
           onkeydown="if(event.key==='Enter')repDoLogin()" />
       </div>
-      <div class="rep-login-error" id="rep-login-error">PIN incorrecto</div>
-      <button class="btn-rep-login" onclick="repDoLogin()">Entrar &rarr;</button>
+      <div class="rep-login-error" id="rep-login-error">Usuario o PIN incorrecto</div>
+      <button class="btn-rep-login" id="btn-rep-login" onclick="repDoLogin()">Entrar &rarr;</button>
     </div>
   </div>
 
@@ -1565,7 +1589,8 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           <h1>&#x1F6F5; Panel <span>Repartidor</span></h1>
           <div class="rep-header-sub" id="rep-header-sub">Cargando pedidos...</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:10px;align-items:center">
+          <span id="rep-user-name" style="color:#fff;font-size:12px;opacity:.85"></span>
           <button class="btn-rep-refresh" onclick="repLoadOrders()" title="Actualizar">&#x1F504;</button>
           <button class="btn-rep-logout" onclick="repDoLogout()">Salir</button>
         </div>
@@ -1919,8 +1944,7 @@ function renderConfigPanel() {
   document.getElementById('cfg-mplink').value = settings.payment_link || '';
   document.getElementById('cfg-horario-apertura').value = settings.horario_apertura || '09:00';
   document.getElementById('cfg-horario-cierre').value = settings.horario_cierre || '21:00';
-  const repPinEl = document.getElementById('cfg-rep-pin');
-  if (repPinEl) repPinEl.value = settings.repartidor_pin || '';
+  loadRepUsersAdmin();
   renderStoreModeUI();
   previewConfig();
 }
@@ -3794,17 +3818,110 @@ function renderStarsText(avg) {
 }
 
 
-async function saveRepPin() {
-  const pin = (document.getElementById('cfg-rep-pin')?.value || '').trim();
-  if (!pin) { showToast('Ingresá un PIN'); return; }
-  settings.repartidor_pin = pin;
-  saveLocalSettings();
+// ===== REPARTIDORES (multi-usuario) =====
+// SQL (correr una vez en Supabase):
+// CREATE TABLE IF NOT EXISTS chipas_repartidores (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   usuario text NOT NULL UNIQUE,
+//   pin text NOT NULL,
+//   nombre text NOT NULL,
+//   activo boolean DEFAULT true,
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_repartidores ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_repartidores" ON chipas_repartidores FOR ALL USING (true) WITH CHECK (true);
+// -- Repartidor inicial para arrancar (después agregás más desde el panel admin):
+// INSERT INTO chipas_repartidores (usuario, pin, nombre) VALUES ('repartidor', '1234', 'Repartidor');
+
+let localRepUsers = []; // [{id, usuario, pin, nombre, activo}]
+
+async function loadRepUsersAdmin() {
+  const { data, error } = await db.from('chipas_repartidores').select('*').order('created_at');
+  if (error) { console.warn('chipas_repartidores: error al leer (¿creaste la tabla?)', error); localRepUsers = []; buildRepUsersUI(); return; }
+  localRepUsers = data ? JSON.parse(JSON.stringify(data)) : [];
+  buildRepUsersUI();
+}
+
+function buildRepUsersUI() {
+  const list = document.getElementById('rep-users-list');
+  if (!list) return;
+  if (!localRepUsers.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px 0">Sin repartidores. Agregá uno para habilitar el acceso.</div>';
+    return;
+  }
+  list.innerHTML = localRepUsers.map((r, idx) => `
+    <div class="rep-user-card">
+      <div class="rep-user-row1">
+        <input type="text" id="rep-user-nombre-${idx}" value="${r.nombre || ''}" placeholder="Nombre (ej: Juan)" />
+        <input type="text" id="rep-user-usuario-${idx}" value="${r.usuario || ''}" placeholder="Usuario" autocomplete="off" />
+        <input type="text" id="rep-user-pin-${idx}" value="${r.pin || ''}" placeholder="PIN" inputmode="numeric" maxlength="8" />
+      </div>
+      <div class="rep-user-row2">
+        <label class="rep-user-toggle"><input type="checkbox" id="rep-user-activo-${idx}" ${r.activo !== false ? 'checked' : ''}/> Activo</label>
+        <button class="btn-del-rep" onclick="deleteRepUserRow(${idx})">🗑 Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function addRepUserRow() {
+  localRepUsers.push({ id: 'new-' + Date.now(), usuario: '', pin: '', nombre: '', activo: true });
+  buildRepUsersUI();
+  setTimeout(() => {
+    const idx = localRepUsers.length - 1;
+    document.getElementById('rep-user-nombre-' + idx)?.focus();
+  }, 50);
+}
+
+function deleteRepUserRow(idx) {
+  localRepUsers.splice(idx, 1);
+  buildRepUsersUI();
+}
+
+async function saveRepUsers() {
+  // Leer valores actuales de la UI
+  localRepUsers = localRepUsers.map((r, idx) => ({
+    ...r,
+    nombre: (document.getElementById('rep-user-nombre-' + idx)?.value || '').trim(),
+    usuario: (document.getElementById('rep-user-usuario-' + idx)?.value || '').trim(),
+    pin: (document.getElementById('rep-user-pin-' + idx)?.value || '').trim(),
+    activo: !!document.getElementById('rep-user-activo-' + idx)?.checked
+  })).filter(r => r.nombre && r.usuario && r.pin);
+
+  const usuariosLower = localRepUsers.map(r => r.usuario.toLowerCase());
+  if (new Set(usuariosLower).size !== usuariosLower.length) {
+    showToast('⚠️ Hay usuarios repetidos, usá uno distinto para cada repartidor');
+    return;
+  }
+
+  if (!localRepUsers.length) {
+    await db.from('chipas_repartidores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    showToast('🗑 Repartidores eliminados');
+    loadRepUsersAdmin();
+    return;
+  }
+
+  const oldIds = localRepUsers.filter(r => !String(r.id).startsWith('new-')).map(r => r.id);
   try {
-    const { error } = await db.from('chipas_settings').upsert({ id: 'main', repartidor_pin: pin, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-    if (error) throw error;
-    showToast('✅ PIN repartidor guardado');
+    // Borrar de la base los que ya no están en la lista
+    if (oldIds.length > 0) {
+      await db.from('chipas_repartidores').delete().not('id', 'in', '(' + oldIds.map(i => '"' + i + '"').join(',') + ')');
+    } else {
+      await db.from('chipas_repartidores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    }
+
+    for (const r of localRepUsers) {
+      if (!String(r.id).startsWith('new-')) {
+        const { error } = await db.from('chipas_repartidores').update({ nombre: r.nombre, usuario: r.usuario, pin: r.pin, activo: r.activo }).eq('id', r.id);
+        if (error) throw error;
+      } else {
+        const { error } = await db.from('chipas_repartidores').insert({ nombre: r.nombre, usuario: r.usuario, pin: r.pin, activo: r.activo });
+        if (error) throw error;
+      }
+    }
+    showToast('✅ Repartidores guardados');
+    loadRepUsersAdmin();
   } catch(e) {
-    showToast('⚠️ Guardado localmente. Error: ' + (e?.message || 'revisá chipas_settings'));
+    showToast('❌ Error al guardar: ' + (e?.message || 'revisá que exista la tabla chipas_repartidores y que el usuario sea único'));
   }
 }
 
@@ -3822,8 +3939,9 @@ let repChatCurrentOrderId = null;
 let repChatMessages = [];
 let repChatChannel = null;
 let repChatGlobalChannel = null;
+let repCurrentUser = null; // {id, usuario, nombre} del repartidor logueado
 
-const REP_PIN_STORAGE_KEY = 'chipas_rep_unlocked';
+const REP_USER_STORAGE_KEY = 'chipas_rep_user';
 
 function repHideLoader() {
   const l = document.getElementById('rep-loader');
@@ -3834,8 +3952,9 @@ function repHideLoader() {
 
 async function repInit() {
   try {
-    const unlocked = sessionStorage.getItem(REP_PIN_STORAGE_KEY);
-    if (unlocked === '1') {
+    const saved = JSON.parse(sessionStorage.getItem(REP_USER_STORAGE_KEY) || 'null');
+    if (saved && saved.id) {
+      repCurrentUser = saved;
       repShowMain();
     } else {
       repHideLoader();
@@ -3849,34 +3968,58 @@ async function repInit() {
 }
 
 async function repDoLogin() {
-  const pin = document.getElementById('rep-login-pin').value.trim();
-  let correctPin = '1234';
+  const usuario = (document.getElementById('rep-login-usuario').value || '').trim();
+  const pin = (document.getElementById('rep-login-pin').value || '').trim();
+  const errEl = document.getElementById('rep-login-error');
+  const btn = document.getElementById('btn-rep-login');
+  if (!usuario || !pin) {
+    errEl.textContent = 'Ingresá usuario y PIN';
+    errEl.classList.add('show');
+    return;
+  }
+  btn.disabled = true;
   try {
-    const { data } = await db.from('chipas_settings').select('repartidor_pin').eq('id','main').limit(1);
-    if (data && data[0] && data[0].repartidor_pin) correctPin = String(data[0].repartidor_pin);
-  } catch(e) {}
-
-  if (pin === correctPin) {
-    sessionStorage.setItem(REP_PIN_STORAGE_KEY, '1');
-    document.getElementById('rep-login-error').classList.remove('show');
+    const { data, error } = await db.from('chipas_repartidores')
+      .select('id, usuario, nombre, pin, activo')
+      .ilike('usuario', usuario)
+      .limit(1);
+    if (error) throw error;
+    const rep = data && data[0];
+    if (!rep || rep.activo === false || String(rep.pin) !== pin) {
+      errEl.textContent = 'Usuario o PIN incorrecto';
+      errEl.classList.add('show');
+      document.getElementById('rep-login-pin').value = '';
+      btn.disabled = false;
+      return;
+    }
+    repCurrentUser = { id: rep.id, usuario: rep.usuario, nombre: rep.nombre };
+    sessionStorage.setItem(REP_USER_STORAGE_KEY, JSON.stringify(repCurrentUser));
+    errEl.classList.remove('show');
     document.getElementById('view-rep-login').style.display = 'none';
     repShowMain();
-  } else {
-    document.getElementById('rep-login-error').classList.add('show');
-    document.getElementById('rep-login-pin').value = '';
+  } catch(e) {
+    console.error('repDoLogin error:', e);
+    errEl.textContent = 'No se pudo validar. ¿Existe la tabla chipas_repartidores?';
+    errEl.classList.add('show');
   }
+  btn.disabled = false;
 }
 
 function repDoLogout() {
-  sessionStorage.removeItem(REP_PIN_STORAGE_KEY);
+  sessionStorage.removeItem(REP_USER_STORAGE_KEY);
+  repCurrentUser = null;
   if (repSubscription) repSubscription.unsubscribe();
   document.getElementById('view-rep-main').style.display = 'none';
+  document.getElementById('rep-login-usuario').value = '';
+  document.getElementById('rep-login-pin').value = '';
   document.getElementById('view-rep-login').style.display = 'flex';
 }
 
 async function repShowMain() {
   document.getElementById('view-rep-login').style.display = 'none';
   document.getElementById('view-rep-main').style.display = 'block';
+  const nameEl = document.getElementById('rep-user-name');
+  if (nameEl) nameEl.textContent = repCurrentUser?.nombre ? ('👤 ' + repCurrentUser.nombre) : '';
   repHideLoader();
   try {
     await repLoadOrders();
