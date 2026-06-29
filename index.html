@@ -750,6 +750,105 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .overlay.show { display: block; }
 .time-ago { font-size: 10px; color: var(--muted); }
 
+/* ===== ASIGNAR REPARTIDOR (admin) ===== */
+.assign-rep-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  z-index: 800; display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.assign-rep-overlay.open { display: flex; }
+.assign-rep-modal {
+  background: #fff; border-radius: 18px; padding: 24px 20px 20px;
+  max-width: 380px; width: 100%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  animation: fadeUp 0.22s ease;
+}
+.assign-rep-title { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+.assign-rep-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+.assign-rep-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.assign-rep-btn {
+  width: 100%; padding: 13px 16px; background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; font-size: 14px; font-weight: 600; font-family: inherit;
+  color: var(--navy); cursor: pointer; text-align: left; transition: all 0.15s;
+  display: flex; align-items: center; gap: 10px;
+}
+.assign-rep-btn:hover { border-color: var(--gold); background: #fffbf3; }
+.assign-rep-btn .rep-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.assign-rep-cancel { width: 100%; padding: 11px; background: none; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; font-family: inherit; color: var(--muted); cursor: pointer; font-weight: 600; }
+.assign-rep-cancel:hover { border-color: var(--red); color: var(--red); }
+.rep-assigned-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #e8f0fe; color: #1a6db5; margin-top: 3px; }
+
+/* ===== TURNOS (repartidor) ===== */
+.rep-turnos-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  z-index: 750; display: none; align-items: flex-end; justify-content: center;
+}
+.rep-turnos-overlay.open { display: flex; }
+.rep-turnos-modal {
+  background: #fff; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 22px 20px 32px;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.2);
+  animation: slideUp 0.22s ease;
+}
+.rep-turnos-title { font-size: 17px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+.rep-turnos-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+.turno-form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.turno-form-row input[type="date"],
+.turno-form-row input[type="time"] {
+  flex: 1; padding: 11px 12px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 13px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none; transition: border-color 0.2s;
+}
+.turno-form-row input:focus { border-color: var(--gold); background: #fff; }
+.turno-notas-input {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 13px; font-family: inherit;
+  background: var(--cream); color: var(--text); outline: none; margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.turno-notas-input:focus { border-color: var(--gold); background: #fff; }
+.btn-pedir-turno {
+  width: 100%; padding: 13px; background: var(--navy); color: #fff;
+  border: none; border-radius: 11px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background 0.15s; margin-bottom: 16px;
+}
+.btn-pedir-turno:hover { background: var(--gold); }
+.btn-pedir-turno:disabled { background: #ccc; cursor: not-allowed; }
+.rep-mis-turnos-list { display: flex; flex-direction: column; gap: 8px; }
+.turno-card {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+}
+.turno-card.pendiente { border-left: 4px solid var(--orange); }
+.turno-card.aceptado { border-left: 4px solid var(--green); }
+.turno-card.rechazado { border-left: 4px solid var(--red); opacity: 0.7; }
+.turno-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.turno-card-fecha { font-size: 14px; font-weight: 700; color: var(--navy); }
+.turno-card-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+.turno-card-status.pendiente { background: #fff3cd; color: #856404; }
+.turno-card-status.aceptado { background: #d4edda; color: var(--green); }
+.turno-card-status.rechazado { background: #fde8e8; color: var(--red); }
+.turno-card-hora { font-size: 12px; color: var(--muted); }
+.turno-card-notas { font-size: 12px; color: var(--muted); margin-top: 4px; font-style: italic; }
+.turno-empty { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+/* ===== TURNOS ADMIN panel ===== */
+.admin-turnos-section { margin-top: 12px; }
+.admin-turno-card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 10px;
+}
+.admin-turno-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.admin-turno-nombre { font-size: 15px; font-weight: 700; color: var(--navy); }
+.admin-turno-fecha { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.admin-turno-actions { display: flex; gap: 8px; }
+.btn-turno-accept { padding: 8px 14px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.btn-turno-accept:hover { background: #256040; }
+.btn-turno-reject { padding: 8px 14px; background: #fde8e8; color: var(--red); border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.btn-turno-reject:hover { background: var(--red); color: #fff; }
+.admin-turnos-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+
 /* ===== REPARTIDOR ===== */
 #view-repartidor { display: none; }
 #rep-loader {
@@ -1408,8 +1507,40 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   </div>
 </div>
 
-<!-- ===================== VISTA ADMIN ===================== -->
-<div id="view-admin">
+<!-- MODAL: ASIGNAR REPARTIDOR -->
+<div class="assign-rep-overlay" id="assign-rep-overlay" onclick="if(event.target===this)closeAssignRep()">
+  <div class="assign-rep-modal">
+    <div class="assign-rep-title">🏍️ Asignar repartidor</div>
+    <div class="assign-rep-sub" id="assign-rep-sub">Elegí quién entrega este pedido</div>
+    <div class="assign-rep-list" id="assign-rep-list"></div>
+    <button class="assign-rep-cancel" onclick="closeAssignRep()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: SOLICITAR TURNO (repartidor) -->
+<div class="rep-turnos-overlay" id="rep-turnos-overlay" onclick="if(event.target===this)repCloseTurnos()">
+  <div class="rep-turnos-modal">
+    <div class="rep-turnos-title">📅 Mis Turnos</div>
+    <div class="rep-turnos-sub">Solicitá días y horarios de trabajo</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">NUEVA SOLICITUD</div>
+    <div class="turno-form-row">
+      <input type="date" id="turno-fecha" />
+    </div>
+    <div class="turno-form-row">
+      <input type="time" id="turno-hora-desde" placeholder="Desde" />
+      <input type="time" id="turno-hora-hasta" placeholder="Hasta" />
+    </div>
+    <input type="text" class="turno-notas-input" id="turno-notas" placeholder="Notas (opcional)" />
+    <button class="btn-pedir-turno" id="btn-pedir-turno" onclick="repSolicitarTurno()">📤 Enviar solicitud</button>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">MIS SOLICITUDES</div>
+    <div class="rep-mis-turnos-list" id="rep-mis-turnos-list">
+      <div class="turno-empty">Cargando...</div>
+    </div>
+    <button onclick="repCloseTurnos()" style="width:100%;margin-top:14px;padding:11px;background:none;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;color:var(--muted);cursor:pointer;font-weight:600">Cerrar</button>
+  </div>
+</div>
+
+
   <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
@@ -1424,6 +1555,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div class="nav-item" id="nav-precios" onclick="showAdminPanel('precios')">💰 Productos y Precios</div>
         <div class="nav-item" id="nav-historial" onclick="showAdminPanel('historial')">📊 Historial de ganancias</div>
         <div class="nav-item" id="nav-resenas" onclick="showAdminPanel('resenas')">⭐ Reseñas de clientes</div>
+        <div class="nav-item" id="nav-turnos" onclick="showAdminPanel('turnos')">📅 Turnos de repartidores <span class="badge" id="badge-turnos" style="display:none">0</span></div>
         <div class="nav-label">Negocio</div>
         <div class="nav-item" id="nav-config" onclick="showAdminPanel('config')">⚙️ Configuración</div>
         <div class="nav-item" id="nav-seguridad" onclick="showAdminPanel('seguridad')">🔒 Seguridad</div>
@@ -1483,6 +1615,17 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
             <div class="tab" onclick="filterOrders('encargos',this)">📝 Encargos <span class="cnt" id="cnt-enc">0</span></div>
           </div>
           <div class="orders-list" id="orders-list"></div>
+        </div>
+
+        <!-- TURNOS DE REPARTIDORES -->
+        <div id="admin-panel-turnos" style="display:none">
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:20px;max-width:560px">
+            <h2 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px">📅 Solicitudes de turnos</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Aceptá o rechazá los turnos que piden los repartidores. Al aceptar, les llega una notificación.</p>
+            <div class="admin-turnos-section" id="admin-turnos-list">
+              <div class="admin-turnos-empty">Cargando...</div>
+            </div>
+          </div>
         </div>
 
         <!-- PRECIOS -->
@@ -1707,6 +1850,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div style="display:flex;gap:10px;align-items:center">
           <span id="rep-user-name" style="color:#fff;font-size:12px;opacity:.85"></span>
           <button class="btn-rep-refresh" onclick="repLoadOrders()" title="Actualizar">&#x1F504;</button>
+          <button class="btn-rep-refresh" onclick="repOpenTurnos()" title="Mis turnos" style="font-size:14px">📅</button>
           <button class="btn-rep-settings" onclick="repOpenConfig()" title="Configuración">&#x2699;&#xFE0F;</button>
           <button class="btn-rep-logout" onclick="repDoLogout()">Salir</button>
         </div>
@@ -2834,6 +2978,8 @@ function initAdmin() {
   }
 
   initAdminChatListeners();
+  initAdminTurnosRealtime();
+  loadActiveRepartidores();
 
   db.channel('admin-orders')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_orders' }, (payload) => {
@@ -2936,9 +3082,16 @@ function renderAdminOrders() {
       actions = `<button class="action-btn btn-accept" onclick="adminUpdateStatus('${order.id}','aceptado')">✅ Aceptar</button>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Rechazar</button>`;
     } else if (order.status === 'aceptado') {
-      actions = `<button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🏍️ Enviar</button>
+      // Si hay más de 1 repartidor activo, mostrar selector; si no, enviar directo
+      const repCount = allActiveRepartidores.length;
+      const assignedBadge = order.repartidor_nombre ? `<span class="rep-assigned-badge">🏍️ ${repEsc(order.repartidor_nombre)}</span>` : '';
+      const enviarBtn = repCount > 1
+        ? `<button class="action-btn btn-dispatch" onclick="openAssignRep('${order.id}','${repEsc(order.nombre)}')">🏍️ Asignar y enviar${assignedBadge ? ' (cambiar)' : ''}</button>`
+        : `<button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🏍️ Enviar</button>`;
+      actions = `${enviarBtn}
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>
-                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
+                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>
+                 ${assignedBadge}`;
     } else if (order.status === 'en_camino') {
       actions = `<button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">🏠 Marcar entregado</button>
                  <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
@@ -2962,7 +3115,7 @@ function renderAdminOrders() {
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
           <div class="order-name">${order.nombre}</div>
-          <div class="order-meta">${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ Envío' : '🏃 Retira'} · 📱 ${order.cel} · ${timeAgo(order.created_at)}</div>
+          <div class="order-meta">${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ Envío' : '🏃 Retira'} · 📱 ${order.cel} · ${timeAgo(order.created_at)}${order.repartidor_nombre ? ` · <strong style="color:var(--blue)">🏍️ ${order.repartidor_nombre}</strong>` : ''}</div>
           ${order.edited_at ? `<div class="time-ago" style="color:var(--orange)">✏️ Modificado ${timeAgo(order.edited_at)}</div>` : ''}
         </div>
         <div style="text-align:right">
@@ -3071,9 +3224,9 @@ function filterOrders(status, el) {
 let localPrices = []; // edited copies
 let deletedIds = new Set();
 
-const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', config: 'Configuración', seguridad: 'Seguridad' };
+const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Turnos de repartidores', config: 'Configuración', seguridad: 'Seguridad' };
 async function showAdminPanel(panel) {
-  ['pedidos','precios','historial','resenas','config','seguridad'].forEach(p => {
+  ['pedidos','precios','historial','resenas','turnos','config','seguridad'].forEach(p => {
     document.getElementById('admin-panel-' + p).style.display = p === panel ? 'block' : 'none';
   });
   document.getElementById('panel-title').textContent = PANEL_TITLES[panel] || panel;
@@ -3083,6 +3236,7 @@ async function showAdminPanel(panel) {
   if (panel === 'config') renderConfigPanel();
   if (panel === 'historial') { setHistorialHoy(); loadHistorial(); }
   if (panel === 'resenas') loadAdminReviews();
+  if (panel === 'turnos') loadAdminTurnos();
   closeSidebar();
 }
 
@@ -4243,6 +4397,7 @@ async function repShowMain() {
     await repLoadOrders();
     repSubscribeRealtime();
     repInitGlobalChatListener();
+    repSubscribeNotificaciones();
   } catch(e) {
     console.error('repShowMain error:', e);
     showToast('Error al cargar pedidos');
@@ -4844,6 +4999,300 @@ async function repSendMessage() {
   if (!error) { input.value = ''; input.style.height = 'auto'; }
   btn.disabled = false;
   if (error) showToast('Error al enviar');
+}
+
+
+// ===== ASIGNAR REPARTIDOR A PEDIDO =====
+// SQL extra necesario:
+// ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS repartidor_id uuid REFERENCES chipas_repartidores(id) DEFAULT null;
+// ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS repartidor_nombre text DEFAULT null;
+
+let assignRepOrderId = null;
+let allActiveRepartidores = [];
+
+async function loadActiveRepartidores() {
+  const { data } = await db.from('chipas_repartidores').select('id,nombre,usuario').eq('activo', true).order('nombre');
+  allActiveRepartidores = data || [];
+}
+
+async function openAssignRep(orderId, orderNombre) {
+  assignRepOrderId = orderId;
+  await loadActiveRepartidores();
+  const sub = document.getElementById('assign-rep-sub');
+  if (sub) sub.textContent = `Pedido de ${orderNombre} — elegí quién lo lleva`;
+  const list = document.getElementById('assign-rep-list');
+  if (!list) return;
+  if (!allActiveRepartidores.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:10px 0;text-align:center">No hay repartidores activos configurados.</div>';
+  } else {
+    list.innerHTML = allActiveRepartidores.map(r => `
+      <button class="assign-rep-btn" onclick="confirmAssignRep('${r.id}','${repEsc(r.nombre)}')">
+        <div class="rep-avatar">${(r.nombre||'?')[0].toUpperCase()}</div>
+        <div><div style="font-size:14px;font-weight:700">${repEsc(r.nombre)}</div><div style="font-size:11px;color:var(--muted)">@${repEsc(r.usuario)}</div></div>
+      </button>`).join('');
+  }
+  document.getElementById('assign-rep-overlay').classList.add('open');
+}
+
+function closeAssignRep() {
+  document.getElementById('assign-rep-overlay').classList.remove('open');
+  assignRepOrderId = null;
+}
+
+async function confirmAssignRep(repId, repNombre) {
+  if (!assignRepOrderId) return;
+  const { error } = await db.from('chipas_orders').update({
+    repartidor_id: repId,
+    repartidor_nombre: repNombre,
+    status: 'en_camino',
+    updated_at: new Date().toISOString()
+  }).eq('id', assignRepOrderId);
+  if (error) { showToast('❌ No se pudo asignar'); return; }
+
+  // Notificar al repartidor vía tabla de notificaciones
+  await db.from('chipas_notificaciones').insert({
+    repartidor_id: repId,
+    tipo: 'pedido_asignado',
+    mensaje: `🏍️ Se te asignó un nuevo pedido (${assignRepOrderId}). ¡Preparate para salir!`,
+    leida: false,
+    created_at: new Date().toISOString()
+  }).catch(() => {}); // No bloqueante
+
+  showToast(`✅ Pedido asignado a ${repNombre} y enviado en camino`);
+  closeAssignRep();
+}
+
+// Agregar el botón "Asignar repartidor" en las acciones del pedido (cuando hay > 1 repartidor)
+// Esto se llama desde renderAdminOrders — se inyecta en los botones de 'aceptado'
+async function getRepCount() {
+  if (allActiveRepartidores.length > 0) return allActiveRepartidores.length;
+  await loadActiveRepartidores();
+  return allActiveRepartidores.length;
+}
+
+// ===== NOTIFICACIONES PARA REPARTIDOR =====
+// SQL extra necesario:
+// CREATE TABLE IF NOT EXISTS chipas_notificaciones (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   repartidor_id uuid NOT NULL,
+//   tipo text NOT NULL,
+//   mensaje text NOT NULL,
+//   leida boolean DEFAULT false,
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_notificaciones ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_notificaciones" ON chipas_notificaciones FOR ALL USING (true) WITH CHECK (true);
+
+let repNotifChannel = null;
+let repNotifBadge = 0;
+
+function repSubscribeNotificaciones() {
+  if (!repCurrentUser) return;
+  if (repNotifChannel) repNotifChannel.unsubscribe();
+  repNotifChannel = db.channel('rep-notif-' + repCurrentUser.id)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'chipas_notificaciones',
+      filter: 'repartidor_id=eq.' + repCurrentUser.id
+    }, (payload) => {
+      if (!payload.new) return;
+      const msg = payload.new.mensaje || '🔔 Tenés una notificación nueva';
+      showToast(msg);
+      sendBrowserNotification('🔔 ' + (payload.new.tipo === 'pedido_asignado' ? '¡Pedido asignado!' : 'Turno actualizado'), msg, 'rep-notif-' + payload.new.id);
+      repNotifBadge++;
+      repUpdateNotifBadge();
+      // Recargar pedidos si es asignación
+      if (payload.new.tipo === 'pedido_asignado') repLoadOrders();
+    })
+    .subscribe();
+}
+
+function repUpdateNotifBadge() {
+  const b = document.getElementById('rep-notif-badge');
+  if (b) { b.textContent = repNotifBadge; b.style.display = repNotifBadge > 0 ? 'inline-flex' : 'none'; }
+}
+
+// ===== TURNOS (repartidor) =====
+// SQL extra necesario:
+// CREATE TABLE IF NOT EXISTS chipas_turnos (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   repartidor_id uuid NOT NULL,
+//   repartidor_nombre text,
+//   fecha date NOT NULL,
+//   hora_desde time,
+//   hora_hasta time,
+//   notas text,
+//   status text DEFAULT 'pendiente' CHECK (status IN ('pendiente','aceptado','rechazado')),
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_turnos ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_turnos" ON chipas_turnos FOR ALL USING (true) WITH CHECK (true);
+
+async function repOpenTurnos() {
+  document.getElementById('rep-turnos-overlay').classList.add('open');
+  // Set default date = today
+  const todayStr = new Date().toISOString().split('T')[0];
+  const fechaEl = document.getElementById('turno-fecha');
+  if (fechaEl && !fechaEl.value) fechaEl.value = todayStr;
+  await repLoadMisTurnos();
+}
+
+function repCloseTurnos() {
+  document.getElementById('rep-turnos-overlay').classList.remove('open');
+}
+
+async function repLoadMisTurnos() {
+  if (!repCurrentUser) return;
+  const list = document.getElementById('rep-mis-turnos-list');
+  if (!list) return;
+  const { data, error } = await db.from('chipas_turnos')
+    .select('*')
+    .eq('repartidor_id', repCurrentUser.id)
+    .order('fecha', { ascending: false })
+    .limit(20);
+  if (error || !data || !data.length) {
+    list.innerHTML = '<div class="turno-empty">No enviaste solicitudes todavía.</div>';
+    return;
+  }
+  list.innerHTML = data.map(t => {
+    const fecha = new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'2-digit' });
+    const hora = t.hora_desde && t.hora_hasta ? `${t.hora_desde.substring(0,5)} – ${t.hora_hasta.substring(0,5)}` : t.hora_desde ? t.hora_desde.substring(0,5) : '';
+    const statusLabel = { pendiente: '⏳ Pendiente', aceptado: '✅ Aceptado', rechazado: '❌ Rechazado' }[t.status] || t.status;
+    return `<div class="turno-card ${t.status}">
+      <div class="turno-card-header">
+        <div class="turno-card-fecha">📅 ${fecha}</div>
+        <span class="turno-card-status ${t.status}">${statusLabel}</span>
+      </div>
+      ${hora ? `<div class="turno-card-hora">🕐 ${hora}</div>` : ''}
+      ${t.notas ? `<div class="turno-card-notas">"${repEsc(t.notas)}"</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function repSolicitarTurno() {
+  if (!repCurrentUser) return;
+  const fecha = document.getElementById('turno-fecha').value;
+  const horaDesde = document.getElementById('turno-hora-desde').value;
+  const horaHasta = document.getElementById('turno-hora-hasta').value;
+  const notas = document.getElementById('turno-notas').value.trim();
+  if (!fecha) { showToast('Elegí una fecha'); return; }
+  const btn = document.getElementById('btn-pedir-turno');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const { error } = await db.from('chipas_turnos').insert({
+    repartidor_id: repCurrentUser.id,
+    repartidor_nombre: repCurrentUser.nombre,
+    fecha,
+    hora_desde: horaDesde || null,
+    hora_hasta: horaHasta || null,
+    notas: notas || null,
+    status: 'pendiente',
+    created_at: new Date().toISOString()
+  });
+  btn.disabled = false; btn.textContent = '📤 Enviar solicitud';
+  if (error) { showToast('❌ No se pudo enviar. Revisá la tabla chipas_turnos.'); console.error(error); return; }
+  showToast('✅ Solicitud enviada. El admin la revisará.');
+  document.getElementById('turno-fecha').value = '';
+  document.getElementById('turno-hora-desde').value = '';
+  document.getElementById('turno-hora-hasta').value = '';
+  document.getElementById('turno-notas').value = '';
+  await repLoadMisTurnos();
+  // Refrescar badge de admin
+}
+
+// ===== TURNOS (admin) =====
+let adminTurnosChannel = null;
+
+async function loadAdminTurnos() {
+  const list = document.getElementById('admin-turnos-list');
+  if (!list) return;
+  const { data, error } = await db.from('chipas_turnos')
+    .select('*')
+    .order('fecha', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error || !data || !data.length) {
+    list.innerHTML = '<div class="admin-turnos-empty">📭 No hay solicitudes de turnos todavía.</div>';
+    updateTurnosBadge(0);
+    return;
+  }
+  const pendientes = data.filter(t => t.status === 'pendiente');
+  updateTurnosBadge(pendientes.length);
+  list.innerHTML = data.map(t => {
+    const fecha = new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday:'long', day:'2-digit', month:'2-digit', year:'2-digit' });
+    const hora = t.hora_desde && t.hora_hasta ? `${t.hora_desde.substring(0,5)} – ${t.hora_hasta.substring(0,5)}` : t.hora_desde ? `Desde ${t.hora_desde.substring(0,5)}` : 'Sin horario especificado';
+    const statusLabel = { pendiente: '⏳ Pendiente', aceptado: '✅ Aceptado', rechazado: '❌ Rechazado' }[t.status] || t.status;
+    const statusColor = { pendiente: 'var(--orange)', aceptado: 'var(--green)', rechazado: 'var(--red)' }[t.status] || 'var(--muted)';
+    return `<div class="admin-turno-card">
+      <div class="admin-turno-header">
+        <div>
+          <div class="admin-turno-nombre">👤 ${repEsc(t.repartidor_nombre || 'Repartidor')}</div>
+          <div class="admin-turno-fecha">📅 ${fecha} · 🕐 ${hora}</div>
+          ${t.notas ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;font-style:italic">"${repEsc(t.notas)}"</div>` : ''}
+          <div style="font-size:11px;font-weight:700;color:${statusColor};margin-top:5px">${statusLabel}</div>
+        </div>
+        ${t.status === 'pendiente' ? `
+        <div class="admin-turno-actions">
+          <button class="btn-turno-accept" onclick="adminAceptarTurno('${t.id}','${t.repartidor_id}','${repEsc(t.repartidor_nombre||'')}','${fecha}')">✅ Aceptar</button>
+          <button class="btn-turno-reject" onclick="adminRechazarTurno('${t.id}','${t.repartidor_id}')">✕ Rechazar</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateTurnosBadge(n) {
+  const b = document.getElementById('badge-turnos');
+  if (!b) return;
+  b.textContent = n;
+  b.style.display = n > 0 ? 'inline-flex' : 'none';
+}
+
+async function adminAceptarTurno(turnoId, repId, repNombre, fechaLabel) {
+  const { error } = await db.from('chipas_turnos').update({ status: 'aceptado' }).eq('id', turnoId);
+  if (error) { showToast('❌ Error al actualizar'); return; }
+  // Enviar notificación al repartidor
+  await db.from('chipas_notificaciones').insert({
+    repartidor_id: repId,
+    tipo: 'turno_aceptado',
+    mensaje: `✅ Tu solicitud de turno para el ${fechaLabel} fue ACEPTADA. ¡Nos vemos!`,
+    leida: false,
+    created_at: new Date().toISOString()
+  }).catch(() => {});
+  showToast(`✅ Turno de ${repNombre} aceptado`);
+  loadAdminTurnos();
+}
+
+async function adminRechazarTurno(turnoId, repId) {
+  const { error } = await db.from('chipas_turnos').update({ status: 'rechazado' }).eq('id', turnoId);
+  if (error) { showToast('❌ Error al actualizar'); return; }
+  await db.from('chipas_notificaciones').insert({
+    repartidor_id: repId,
+    tipo: 'turno_rechazado',
+    mensaje: `❌ Tu solicitud de turno fue rechazada. Podés pedir otro horario.`,
+    leida: false,
+    created_at: new Date().toISOString()
+  }).catch(() => {});
+  showToast('Turno rechazado');
+  loadAdminTurnos();
+}
+
+function initAdminTurnosRealtime() {
+  if (adminTurnosChannel) return;
+  adminTurnosChannel = db.channel('admin-turnos-watch')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_turnos' }, (payload) => {
+      if (!payload.new) return;
+      const rep = payload.new.repartidor_nombre || 'Un repartidor';
+      sendBrowserNotification('📅 Nueva solicitud de turno', `${rep} pidió un turno`, 'turno-' + payload.new.id);
+      showToast(`📅 ${rep} solicitó un turno`);
+      // Update badge
+      const b = document.getElementById('badge-turnos');
+      if (b) {
+        const cur = parseInt(b.textContent || '0') + 1;
+        b.textContent = cur;
+        b.style.display = 'inline-flex';
+      }
+      // If panel is open, reload
+      if (document.getElementById('admin-panel-turnos')?.style.display === 'block') loadAdminTurnos();
+    })
+    .subscribe();
 }
 
 // ===== START (after all declarations) =====
