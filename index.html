@@ -641,6 +641,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .pill-pendiente { background: #fff3cd; color: #856404; }
 .pill-aceptado { background: #e3f0fb; color: var(--blue); }
 .pill-en_camino { background: #fff3e0; color: var(--orange); }
+.pill-modificado_pago_pendiente { background: #fff3cd; color: #92400e; border: 1.5px solid #f59e0b; font-weight: 800; }
 .pill-entregado { background: #d4edda; color: var(--green); }
 .pill-cancelado { background: #fde8e8; color: var(--red); }
 .pill-encargo { background: #f0e6ff; color: #7c3aed; }
@@ -1706,6 +1707,22 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           </div>
           <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar cambios</button>
           </div><!-- /config-card horario -->
+          <!-- EXTRAS POR MODIFICACIÓN -->
+          <div class="config-card" style="max-width:480px;margin-top:0">
+            <h2>⚠️ Extras por modificación de pedido</h2>
+            <div class="config-intro">Cuando un cliente modifica su pedido una vez aceptado, se le cobra un monto fijo extra.</div>
+            <div class="form-group">
+              <label>EXTRA POR AGREGAR PRODUCTOS (una vez el pedido fue enviado) ($)</label>
+              <input type="number" id="cfg-extra-modificacion" min="0" step="100" placeholder="Ej: 500" />
+              <div class="hint">Se suma al nuevo total cuando el cliente agrega productos después de que el pedido fue aceptado.</div>
+            </div>
+            <div class="form-group">
+              <label>EXTRA POR CAMBIO DE LOCALIDAD / DIRECCIÓN ($)</label>
+              <input type="number" id="cfg-extra-cambio-localidad" min="0" step="100" placeholder="Ej: 300" />
+              <div class="hint">Monto fijo que se cobra si el cliente cambia su dirección o localidad.</div>
+            </div>
+            <button class="btn-save-prices" onclick="saveSettings()">💾 Guardar extras</button>
+          </div>
           <!-- ENVÍO A DOMICILIO POR LOCALIDAD -->
           <div class="config-card" style="max-width:540px;margin-top:0">
             <h2>🏍️ Envío a domicilio por localidad</h2>
@@ -1730,6 +1747,13 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <!-- SEGURIDAD -->
 
         <!-- HISTORIAL -->
+        <!-- DEVOLUCIONES -->
+        <div id="admin-panel-devoluciones" style="display:none">
+          <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px">💸 Devoluciones pendientes</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Clientes que sacaron productos de un pedido ya pagado. Realizá la devolución y marcala como hecha.</p>
+          <div id="admin-devoluciones-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Cargando...</div></div>
+        </div>
+
         <div id="admin-panel-historial" style="display:none">
           <div class="historial-filter">
             <input type="date" id="hist-desde" />
@@ -1888,6 +1912,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <button class="rep-group-btn active" id="rep-btn-mode-orden" onclick="repSetMode('orden')">&#x1F4CB; Mi orden</button>
         <button class="rep-group-btn" id="rep-btn-mode-localidad" onclick="repSetMode('localidad')">&#x1F4CD; Por localidad</button>
       </div>
+      <button id="btn-ruta-optima" onclick="repRutaOptima()" style="width:100%;margin:0 0 14px;padding:13px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:none;gap:8px;align-items:center;justify-content:center">&#x1F5FA;&#xFE0F; Ruta más eficiente</button>
 
       <div id="rep-orders-container"></div>
     </div>
@@ -2694,6 +2719,25 @@ function validate() {
   return ok;
 }
 
+function detectModificationType(prevOrder, newOrder) {
+  const prevTotal = (prevOrder.items || []).reduce((s,i) => s + i.subtotal, 0);
+  const newTotal = (newOrder.items || []).reduce((s,i) => s + i.subtotal, 0);
+  const prevItems = JSON.stringify((prevOrder.items||[]).map(i=>({id:i.id,qty:i.qty})).sort((a,b)=>a.id>b.id?1:-1));
+  const newItems  = JSON.stringify((newOrder.items ||[]).map(i=>({id:i.id,qty:i.qty})).sort((a,b)=>a.id>b.id?1:-1));
+  const cambiaLugar = (prevOrder.calle !== newOrder.calle || prevOrder.altura !== newOrder.altura || prevOrder.localidad !== newOrder.localidad);
+  const agregaProductos = newTotal > prevTotal;
+  const sacaProductos   = newTotal < prevTotal && !agregaProductos;
+  let extra = 0;
+  let tipo = '';
+  if (agregaProductos) { extra += Number(settings.extra_modificacion) || 0; tipo = 'productos'; }
+  if (cambiaLugar)     { extra += Number(settings.extra_cambio_localidad) || 0; tipo = tipo ? 'productos_y_lugar' : 'lugar'; }
+  return { agregaProductos, sacaProductos, cambiaLugar, extra, tipo };
+}
+
+function calcModificacionExtra(order) {
+  return 0; // placeholder; real value set in detection block
+}
+
 async function submitOrder() {
   if (!validate()) return;
   const btn = document.getElementById('btn-submit');
@@ -2719,10 +2763,38 @@ async function submitOrder() {
     nombre_transferencia: selectedPaymentMethod === 'transferencia' ? document.getElementById('f-nombre-transferencia').value.trim() : '',
     items, total,
     ...(editMode ? {} : { status: 'pendiente' }),
+    ...(editMode ? { modificacion_extra: calcModificacionExtra(order) } : {}),
     is_encargo: modoEncargo && !editMode,
     updated_at: new Date().toISOString(),
     edited_at: editMode ? new Date().toISOString() : null
   };
+
+  // Detect modification type for already-paid orders in editMode
+  if (editMode && myOrderId) {
+    const { data: prevOrder } = await db.from('chipas_orders').select('*').eq('id', myOrderId).single();
+    if (prevOrder && prevOrder.pago_avisado) {
+      const modType = detectModificationType(prevOrder, order);
+      if (modType.agregaProductos || modType.cambiaLugar) {
+        order.status = 'modificado_pago_pendiente';
+        order.modificacion_tipo = modType.tipo;
+        order.modificacion_extra = modType.extra;
+        order.total_original = prevOrder.total;
+        order.diferencia_pago = order.total + modType.extra - prevOrder.total;
+        order.pago_avisado = false; // requiere nuevo aviso de pago
+      } else if (modType.sacaProductos) {
+        order.modificacion_tipo = 'devolucion';
+        order.devolucion_monto = prevOrder.total - order.total;
+        order.devolucion_pendiente = true;
+        // notify admin
+        await db.from('chipas_notificaciones').insert({
+          repartidor_id: 'admin',
+          tipo: 'devolucion_pendiente',
+          mensaje: `💸 ${prevOrder.nombre} sacó productos. Debés devolver ${formatPrice(prevOrder.total - order.total)}.`,
+          leida: false, created_at: new Date().toISOString(), order_id: myOrderId
+        }).catch(() => {});
+      }
+    }
+  }
 
   let error;
   if (editMode && myOrderId) {
@@ -2806,11 +2878,17 @@ async function markAsPaid() {
   if (nombreErr) nombreErr.classList.remove('show');
   const btn = document.getElementById('btn-ya-pague');
   btn.disabled = true; btn.textContent = 'Avisando...';
-  const { error } = await db.from('chipas_orders').update({
+  const { data: curOrder } = await db.from('chipas_orders').select('status').eq('id', myOrderId).single();
+  const updatePayload = {
     pago_avisado: true, pago_avisado_at: new Date().toISOString(),
     metodo_pago: 'transferencia',
     nombre_transferencia: nombre
-  }).eq('id', myOrderId);
+  };
+  if (curOrder?.status === 'modificado_pago_pendiente') {
+    updatePayload.status = 'pendiente';
+    updatePayload.diferencia_pagada = true;
+  }
+  const { error } = await db.from('chipas_orders').update(updatePayload).eq('id', myOrderId);
   if (error) {
     showToast('❌ No se pudo avisar, intentá de nuevo');
     btn.disabled = false; btn.textContent = '✅ Ya transferí, avisar';
@@ -2861,7 +2939,7 @@ function notifyStatusChangeIfNeeded(order) {
   }
 }
 
-const STATUS_MAP = { pendiente: 0, aceptado: 1, en_camino: 2, entregado: 3 };
+const STATUS_MAP = { pendiente: 0, aceptado: 1, modificado_pago_pendiente: 1, en_camino: 2, entregado: 3 };
 function updateStatusTracker(order) {
   if (!order) return;
   notifyStatusChangeIfNeeded(order);
@@ -2907,7 +2985,7 @@ function updateStatusTracker(order) {
     `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>${order.repartidor_nombre ? ` · <span style="color:var(--gold-light)">🏍️ Lo lleva ${order.repartidor_nombre}</span>` : ''}`;
 
   const postActions = document.getElementById('post-order-actions');
-  const showPayment = (order.status === 'pendiente' || order.status === 'aceptado');
+  const showPayment = (order.status === 'pendiente' || order.status === 'aceptado' || order.status === 'modificado_pago_pendiente');
   const canEdit = (order.status === 'pendiente' || order.status === 'aceptado');
   postActions.style.display = showPayment ? 'block' : 'none';
   const editBtn = document.getElementById('btn-edit-order');
@@ -2915,10 +2993,25 @@ function updateStatusTracker(order) {
   const editLocked = document.getElementById('edit-locked-msg');
   if (editBtn) editBtn.style.display = canEdit ? 'inline-block' : 'none';
   if (cancelBtn) cancelBtn.style.display = canEdit ? 'inline-block' : 'none';
-  if (editLocked) editLocked.style.display = order.status === 'en_camino' ? 'block' : 'none';
+  if (editLocked) {
+    if (order.status === 'en_camino') { editLocked.style.display = 'block'; editLocked.textContent = '🏍️ Tu pedido ya salió, no se puede modificar'; }
+    else if (order.status === 'modificado_pago_pendiente') { editLocked.style.display = 'block'; editLocked.textContent = '⚠️ Pedido modificado · Esperando tu pago de la diferencia'; }
+    else editLocked.style.display = 'none';
+  }
 
   paymentCard.classList.toggle('visible', showPayment);
   if (showPayment) {
+    // Show diff amount if modified order awaiting payment
+    const diffBanner = document.getElementById('payment-diff-banner');
+    if (order.status === 'modificado_pago_pendiente' && order.diferencia_pago > 0) {
+      if (diffBanner) {
+        diffBanner.style.display = 'block';
+        diffBanner.innerHTML = `<strong>⚠️ Tu pedido fue modificado.</strong><br>Debés transferir la diferencia de <strong>${formatPrice(order.diferencia_pago)}</strong> adicional al mismo alias.`;
+      }
+      document.getElementById('payment-amount').innerHTML = `Transferí la diferencia: <strong>${formatPrice(order.diferencia_pago)}</strong>`;
+    } else {
+      if (diffBanner) diffBanner.style.display = 'none';
+    }
     // Restaurar método de pago si ya eligió efectivo
     if (order.metodo_pago === 'efectivo') {
       selectPaymentMethod('efectivo');
@@ -3018,6 +3111,7 @@ function initAdmin() {
 
   initAdminChatListeners();
   initAdminTurnosRealtime();
+  updateDevolucionesBadge();
   loadActiveRepartidores();
 
   db.channel('admin-orders')
@@ -3045,6 +3139,15 @@ function initAdmin() {
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chipas_orders' }, (payload) => {
       loadAdminOrders();
+      if (payload.new && payload.old && payload.new.status === 'modificado_pago_pendiente' && payload.old.status !== 'modificado_pago_pendiente') {
+          sendBrowserNotification('⚠️ Pedido modificado', `${payload.new.nombre} modificó su pedido. Diferencia: ${formatPrice(payload.new.diferencia_pago || 0)}`, 'chipas-mod-' + payload.new.id);
+          showToast(`⚠️ ${payload.new.nombre} modificó su pedido · Diferencia: ${formatPrice(payload.new.diferencia_pago || 0)}`);
+          updateDevolucionesBadge();
+        }
+      if (payload.new && payload.old && payload.new.devolucion_pendiente && !payload.old.devolucion_pendiente) {
+          updateDevolucionesBadge();
+          showToast(`💸 Nueva devolución pendiente: ${payload.new.nombre}`);
+        }
       if (payload.new && payload.old && !payload.old.pago_avisado && payload.new.pago_avisado) {
         playNotificationSound();
         sendBrowserNotification('💳 Pago confirmado', `${payload.new.nombre} avisó que ya transfirió — ${formatPrice(payload.new.total)}`, 'chipas-admin-pago-' + payload.new.id);
@@ -3067,7 +3170,7 @@ async function loadAdminOrders() {
   renderAdminOrders();
 }
 
-const PILLS = { pendiente:'🕐 Pendiente', aceptado:'✅ Aceptado', en_camino:'🏍️ En camino', entregado:'🏠 Entregado', cancelado:'✕ Cancelado' };
+const PILLS = { pendiente:'🕐 Pendiente', aceptado:'✅ Aceptado', modificado_pago_pendiente:'⚠️ Modificado · Pago pendiente', en_camino:'🏍️ En camino', entregado:'🏠 Entregado', cancelado:'✕ Cancelado' };
 
 function renderAdminOrders() {
   const today = new Date().toDateString();
@@ -3263,9 +3366,9 @@ function filterOrders(status, el) {
 let localPrices = []; // edited copies
 let deletedIds = new Set();
 
-const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Turnos de repartidores', config: 'Configuración', seguridad: 'Seguridad' };
+const PANEL_TITLES = { pedidos: 'Pedidos', precios: 'Productos y Precios', historial: 'Historial de ganancias', resenas: 'Reseñas de clientes', turnos: 'Turnos de repartidores', devoluciones: 'Devoluciones pendientes', config: 'Configuración', seguridad: 'Seguridad' };
 async function showAdminPanel(panel) {
-  ['pedidos','precios','historial','resenas','turnos','config','seguridad'].forEach(p => {
+  ['pedidos','precios','historial','resenas','turnos','devoluciones','config','seguridad'].forEach(p => {
     document.getElementById('admin-panel-' + p).style.display = p === panel ? 'block' : 'none';
   });
   document.getElementById('panel-title').textContent = PANEL_TITLES[panel] || panel;
@@ -3276,6 +3379,7 @@ async function showAdminPanel(panel) {
   if (panel === 'historial') { setHistorialHoy(); loadHistorial(); }
   if (panel === 'resenas') loadAdminReviews();
   if (panel === 'turnos') loadAdminTurnos();
+  if (panel === 'devoluciones') loadAdminDevoluciones();
   closeSidebar();
 }
 
@@ -4448,7 +4552,7 @@ async function repLoadOrders() {
   today.setHours(0, 0, 0, 0);
   const { data, error } = await db.from('chipas_orders')
     .select('*')
-    .in('status', ['aceptado', 'en_camino', 'entregado'])
+    .in('status', ['aceptado', 'modificado_pago_pendiente', 'en_camino', 'entregado'])
     .eq('entrega', 'domicilio')
     .neq('archivado', true)
     .gte('created_at', today.toISOString())
@@ -4463,7 +4567,12 @@ async function repLoadOrders() {
 function repSubscribeRealtime() {
   if (repSubscription) repSubscription.unsubscribe();
   repSubscription = db.channel('repartidor-orders')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chipas_orders' }, async () => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chipas_orders' }, async (payload) => {
+      const prev = payload.old;
+      const next = payload.new;
+      if (next && prev && next.status === 'modificado_pago_pendiente' && prev.status !== 'modificado_pago_pendiente') {
+        showToast(`⚠️ Pedido de ${next.nombre} fue MODIFICADO — esperá a que el admin lo reacepte`);
+      }
       await repLoadOrders();
     })
     .subscribe();
@@ -4508,6 +4617,13 @@ function repRender() {
   if (!sorted.length) {
     container.innerHTML = '<div class="rep-empty-state"><div class="icon">&#x1F4ED;</div><h3>Sin pedidos</h3><p>Los pedidos aceptados aparecer\u00E1n ac\u00E1</p></div>';
     return;
+  }
+
+  // Show ruta optima button only when there are 2+ active (non-entregado) orders with address
+  const activeWithAddr = sorted.filter(o => o.status !== 'entregado' && o.calle && o.altura);
+  const rutaBtn = document.getElementById('btn-ruta-optima');
+  if (rutaBtn) {
+    rutaBtn.style.display = activeWithAddr.length >= 2 ? 'flex' : 'none';
   }
 
   if (repViewMode === 'localidad') {
@@ -4587,6 +4703,7 @@ function repBuildCard(order, position, showDrag) {
       <div class="rep-card-body">
         <div class="rep-pos-badge">${order.status === 'entregado' ? '&#x2713;' : position + 1}</div>
         <div class="rep-card-name">${repEsc(order.nombre)}</div>
+        ${order.status === 'modificado_pago_pendiente' ? `<div style="background:#fff3cd;color:#92400e;font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;border:1.5px solid #f59e0b;margin:4px 0;display:inline-block">⚠️ PEDIDO MODIFICADO · Esperá confirmación del admin</div>` : ''}
         ${order.localidad ? `<div class="rep-card-locality">&#x1F4CD; ${repEsc(order.localidad)}</div>` : ''}
         <div class="rep-card-address">
           ${repEsc(order.calle || '')} ${repEsc(order.altura || '')}
@@ -4761,6 +4878,44 @@ function repOpenWhatsApp(cel, nombre) {
 
 function repOpenMaps(address) {
   window.open(`https://maps.google.com/?q=${encodeURIComponent(address + ', Argentina')}`, '_blank');
+}
+
+function repRutaOptima() {
+  const sorted = repGetSortedOrders();
+  const activos = sorted.filter(o => o.status !== 'entregado' && o.calle && o.altura);
+  if (activos.length < 2) { showToast('Necesitás al menos 2 pedidos activos'); return; }
+
+  const buildAddr = o => `${o.calle} ${o.altura}${o.localidad ? ', ' + o.localidad : ''}, Argentina`;
+
+  if (!navigator.geolocation) {
+    // Sin geolocalización: abrir igual sin origen
+    const waypoints = activos.map(o => encodeURIComponent(buildAddr(o))).join('|');
+    const url = `https://www.google.com/maps/dir/?api=1&waypoints=${waypoints}&waypoints_optimized=true&travelmode=driving`;
+    window.open(url, '_blank');
+    return;
+  }
+
+  const btn = document.getElementById('btn-ruta-optima');
+  if (btn) { btn.textContent = '📍 Obteniendo ubicación...'; btn.disabled = true; }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      if (btn) { btn.innerHTML = '&#x1F5FA;&#xFE0F; Ruta más eficiente'; btn.disabled = false; }
+      const origin = `${pos.coords.latitude},${pos.coords.longitude}`;
+      const waypoints = activos.map(o => encodeURIComponent(buildAddr(o))).join('|');
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&waypoints=${waypoints}&waypoints_optimized=true&travelmode=driving`;
+      window.open(url, '_blank');
+    },
+    err => {
+      if (btn) { btn.innerHTML = '&#x1F5FA;&#xFE0F; Ruta más eficiente'; btn.disabled = false; }
+      // Si niega la ubicación, abrir sin origen
+      const waypoints = activos.map(o => encodeURIComponent(buildAddr(o))).join('|');
+      const url = `https://www.google.com/maps/dir/?api=1&waypoints=${waypoints}&waypoints_optimized=true&travelmode=driving`;
+      window.open(url, '_blank');
+      showToast('Sin ubicación: la ruta empieza desde el primer destino');
+    },
+    { timeout: 8000, maximumAge: 60000 }
+  );
 }
 
 function repSetMode(mode) {
@@ -5277,6 +5432,50 @@ async function loadAdminTurnos() {
   }).join('');
 }
 
+async function loadAdminDevoluciones() {
+  const list = document.getElementById('admin-devoluciones-list');
+  if (!list) return;
+  list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Cargando...</div>';
+  const { data, error } = await db.from('chipas_orders')
+    .select('*')
+    .eq('devolucion_pendiente', true)
+    .order('updated_at', { ascending: false });
+  const badge = document.getElementById('badge-devoluciones');
+  if (error || !data || !data.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">✅ No hay devoluciones pendientes</div>';
+    if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
+    return;
+  }
+  if (badge) { badge.textContent = data.length; badge.style.display = 'inline-flex'; }
+  list.innerHTML = data.map(o => `
+    <div class="admin-turno-card" style="margin-bottom:12px">
+      <div class="admin-turno-header">
+        <div>
+          <div class="admin-turno-nombre">👤 ${repEsc(o.nombre)} · 📱 ${repEsc(o.cel)}</div>
+          <div class="admin-turno-fecha">Pedido: ${o.id}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);margin-top:4px">💸 Devolver: ${formatPrice(o.devolucion_monto || 0)}</div>
+        </div>
+        <div class="admin-turno-actions">
+          <button class="btn-turno-accept" onclick="adminMarcarDevolucion('${o.id}','${repEsc(o.nombre)}',${o.devolucion_monto||0})">✅ Devolución realizada</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function adminMarcarDevolucion(orderId, nombre, monto) {
+  const { error } = await db.from('chipas_orders').update({ devolucion_pendiente: false, devolucion_realizada: true, devolucion_at: new Date().toISOString() }).eq('id', orderId);
+  if (error) { showToast('❌ Error al marcar'); return; }
+  // Notify client via chipas_notificaciones (client polls this)
+  await db.from('chipas_notificaciones').insert({
+    repartidor_id: 'cliente_' + orderId,
+    tipo: 'devolucion_realizada',
+    mensaje: `💸 Se realizó la devolución de ${formatPrice(monto)} por tu pedido modificado.`,
+    leida: false, created_at: new Date().toISOString(), order_id: orderId
+  }).catch(() => {});
+  showToast(`✅ Devolución de ${nombre} marcada como realizada`);
+  loadAdminDevoluciones();
+}
+
 function updateTurnosBadge(n) {
   const b = document.getElementById('badge-turnos');
   if (!b) return;
@@ -5311,6 +5510,15 @@ async function adminRechazarTurno(turnoId, repId) {
   }).catch(() => {});
   showToast('Turno rechazado');
   loadAdminTurnos();
+}
+
+async function updateDevolucionesBadge() {
+  const { data } = await db.from('chipas_orders').select('id').eq('devolucion_pendiente', true);
+  const badge = document.getElementById('badge-devoluciones');
+  if (!badge) return;
+  const n = data?.length || 0;
+  badge.textContent = n;
+  badge.style.display = n > 0 ? 'inline-flex' : 'none';
 }
 
 function initAdminTurnosRealtime() {
