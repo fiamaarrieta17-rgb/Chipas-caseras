@@ -1970,8 +1970,9 @@ const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
 // ===== DETECT VIEW =====
-const isAdmin = window.location.search.includes('admin');
-const isRepartidor = window.location.search.includes('repartidor');
+const _roleParams = new URLSearchParams(window.location.search);
+const isAdmin = _roleParams.has('admin');
+const isRepartidor = _roleParams.has('repartidor');
 // Cargar manifest correcto según rol
 (function() {
   const el = document.getElementById('pwa-manifest');
