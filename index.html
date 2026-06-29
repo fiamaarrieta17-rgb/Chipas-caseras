@@ -1561,6 +1561,23 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   </div>
 </div>
 
+<!-- MODAL: VACANTES DE TURNO (repartidor) -->
+<div class="rep-turnos-overlay" id="rep-vacantes-overlay" onclick="if(event.target===this)repCloseVacantes()">
+  <div class="rep-turnos-modal">
+    <div class="rep-turnos-title">📢 Vacantes de turno</div>
+    <div class="rep-turnos-sub">Horarios que propone el negocio. Postulate y esperá la confirmación.</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">DISPONIBLES</div>
+    <div class="rep-mis-turnos-list" id="rep-vacantes-list" style="margin-bottom:20px">
+      <div class="turno-empty">Cargando...</div>
+    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">MIS POSTULACIONES</div>
+    <div class="rep-mis-turnos-list" id="rep-mis-postulaciones-list">
+      <div class="turno-empty">Cargando...</div>
+    </div>
+    <button onclick="repCloseVacantes()" style="width:100%;margin-top:14px;padding:11px;background:none;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;color:var(--muted);cursor:pointer;font-weight:600">Cerrar</button>
+  </div>
+</div>
+
 
 <!-- ===================== VISTA ADMIN ===================== -->
 <div id="view-admin" style="display:none">
@@ -1644,6 +1661,28 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
         <!-- TURNOS DE REPARTIDORES -->
         <div id="admin-panel-turnos" style="display:none">
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:20px;max-width:560px;margin-bottom:20px">
+            <h2 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px">📢 Proponer horario para repartidores</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Publicá un horario disponible. A los repartidores activos les llega una notificación para postularse.</p>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">DÍA(S)</div>
+            <div id="oferta-fechas-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+            <button class="btn-add-localidad" onclick="addOfertaFechaRow()" style="margin-bottom:16px">+ Agregar otro día</button>
+            <div class="turno-form-row">
+              <input type="time" id="oferta-hora-desde" placeholder="Desde" />
+              <input type="time" id="oferta-hora-hasta" placeholder="Hasta" />
+            </div>
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:5px">Repartidores necesarios</label>
+            <input type="number" id="oferta-cupos" min="1" value="1" style="width:100px;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none;margin-bottom:12px" />
+            <input type="text" class="turno-notas-input" id="oferta-notas" placeholder="Notas (opcional, ej: zona centro)" />
+            <button class="btn-pedir-turno" id="btn-publicar-vacante" onclick="publicarOfertaTurno()">📤 Publicar vacante</button>
+          </div>
+          <div style="background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:20px;max-width:560px;margin-bottom:20px">
+            <h2 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px">📋 Vacantes publicadas</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Aceptá un postulante para cubrir el horario. Al aceptar, desaparece para el resto de los repartidores.</p>
+            <div id="admin-vacantes-list">
+              <div class="admin-turnos-empty">Cargando...</div>
+            </div>
+          </div>
           <div style="background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:20px;max-width:560px;margin-bottom:20px">
             <h2 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px">📅 Solicitudes de turnos</h2>
             <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Aceptá o rechazá los turnos que piden los repartidores. Al aceptar, les llega una notificación.</p>
@@ -2002,6 +2041,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
           <button class="btn-rep-icon" onclick="repOpenTurnos()" title="Mis turnos">📅</button>
+          <button class="btn-rep-icon" onclick="repOpenVacantes()" title="Vacantes de turno" style="position:relative">📢<span id="badge-rep-vacantes" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px">0</span></button>
           <button class="btn-rep-icon" onclick="repOpenConfig()" title="Configuración">⚙️</button>
           <button class="btn-rep-logout" onclick="repDoLogout()">Salir</button>
         </div>
@@ -4891,6 +4931,7 @@ async function repShowMain() {
     repSubscribeRealtime();
     repInitGlobalChatListener();
     repSubscribeNotificaciones();
+    repCheckVacantesPendientes();
   } catch(e) {
     console.error('repShowMain error:', e);
     showToast('Error al cargar pedidos');
@@ -5757,6 +5798,12 @@ let repNotifBadge = 0;
 function repSubscribeNotificaciones() {
   if (!repCurrentUser) return;
   if (repNotifChannel) repNotifChannel.unsubscribe();
+  const notifTitles = {
+    pedido_asignado: '¡Pedido asignado!',
+    vacante_turno: '📢 Nueva vacante de turno',
+    turno_postulacion_aceptada: '✅ ¡Fuiste aceptado!',
+    turno_postulacion_rechazada: 'Turno actualizado'
+  };
   repNotifChannel = db.channel('rep-notif-' + repCurrentUser.id)
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'chipas_notificaciones',
@@ -5765,11 +5812,24 @@ function repSubscribeNotificaciones() {
       if (!payload.new) return;
       const msg = payload.new.mensaje || '🔔 Tenés una notificación nueva';
       showToast(msg);
-      sendBrowserNotification('🔔 ' + (payload.new.tipo === 'pedido_asignado' ? '¡Pedido asignado!' : 'Turno actualizado'), msg, 'rep-notif-' + payload.new.id);
+      sendBrowserNotification('🔔 ' + (notifTitles[payload.new.tipo] || 'Turno actualizado'), msg, 'rep-notif-' + payload.new.id);
       repNotifBadge++;
       repUpdateNotifBadge();
       // Recargar pedidos si es asignación
       if (payload.new.tipo === 'pedido_asignado') repLoadOrders();
+      // Nueva vacante publicada por el admin
+      if (payload.new.tipo === 'vacante_turno') {
+        repVacantesBadgeCount++;
+        repUpdateVacantesBadge();
+        if (document.getElementById('rep-vacantes-overlay')?.classList.contains('open')) repLoadVacantesAbiertas();
+      }
+      // Resultado de una postulación (aceptada o rechazada)
+      if (payload.new.tipo === 'turno_postulacion_aceptada' || payload.new.tipo === 'turno_postulacion_rechazada') {
+        if (document.getElementById('rep-vacantes-overlay')?.classList.contains('open')) {
+          repLoadVacantesAbiertas();
+          repLoadMisPostulaciones();
+        }
+      }
     })
     .subscribe();
 }
@@ -5880,11 +5940,160 @@ async function repSolicitarTurno() {
   // Refrescar badge de admin
 }
 
+// ===== VACANTES DE TURNO (oferta del admin → postulación del repartidor) =====
+// SQL extra necesario:
+// CREATE TABLE IF NOT EXISTS chipas_ofertas_turno (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   fecha date NOT NULL,
+//   hora_desde time NOT NULL,
+//   hora_hasta time NOT NULL,
+//   notas text,
+//   cupos integer DEFAULT 1,
+//   status text DEFAULT 'abierto' CHECK (status IN ('abierto','cubierto','cancelado')),
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_ofertas_turno ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_ofertas_turno" ON chipas_ofertas_turno FOR ALL USING (true) WITH CHECK (true);
+//
+// CREATE TABLE IF NOT EXISTS chipas_turno_postulantes (
+//   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//   oferta_id uuid NOT NULL,
+//   repartidor_id uuid NOT NULL,
+//   repartidor_nombre text,
+//   status text DEFAULT 'pendiente' CHECK (status IN ('pendiente','aceptado','rechazado')),
+//   created_at timestamptz DEFAULT now()
+// );
+// ALTER TABLE chipas_turno_postulantes ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_turno_postulantes" ON chipas_turno_postulantes FOR ALL USING (true) WITH CHECK (true);
+
+let repVacantesBadgeCount = 0;
+
+function repUpdateVacantesBadge() {
+  const b = document.getElementById('badge-rep-vacantes');
+  if (!b) return;
+  b.textContent = repVacantesBadgeCount;
+  b.style.display = repVacantesBadgeCount > 0 ? 'flex' : 'none';
+}
+
+// Chequeo inicial al entrar al panel: cuántas vacantes abiertas todavía no tienen postulación mía
+async function repCheckVacantesPendientes() {
+  if (!repCurrentUser) return;
+  const { data: ofertas } = await db.from('chipas_ofertas_turno').select('id').eq('status', 'abierto');
+  if (!ofertas || !ofertas.length) { repVacantesBadgeCount = 0; repUpdateVacantesBadge(); return; }
+  const ids = ofertas.map(o => o.id);
+  const { data: mias } = await db.from('chipas_turno_postulantes').select('oferta_id').eq('repartidor_id', repCurrentUser.id).in('oferta_id', ids);
+  const yaPostulado = new Set((mias || []).map(m => m.oferta_id));
+  repVacantesBadgeCount = ids.filter(id => !yaPostulado.has(id)).length;
+  repUpdateVacantesBadge();
+}
+
+async function repOpenVacantes() {
+  document.getElementById('rep-vacantes-overlay').classList.add('open');
+  repVacantesBadgeCount = 0;
+  repUpdateVacantesBadge();
+  await Promise.all([repLoadVacantesAbiertas(), repLoadMisPostulaciones()]);
+}
+
+function repCloseVacantes() {
+  document.getElementById('rep-vacantes-overlay').classList.remove('open');
+}
+
+async function repLoadVacantesAbiertas() {
+  const list = document.getElementById('rep-vacantes-list');
+  if (!list || !repCurrentUser) return;
+  const { data: ofertas, error } = await db.from('chipas_ofertas_turno')
+    .select('*').eq('status', 'abierto').order('fecha', { ascending: true }).order('hora_desde', { ascending: true });
+  if (error || !ofertas || !ofertas.length) {
+    list.innerHTML = '<div class="turno-empty">📭 No hay vacantes disponibles por ahora.</div>';
+    return;
+  }
+  const ofertaIds = ofertas.map(o => o.id);
+  const { data: misPost } = await db.from('chipas_turno_postulantes')
+    .select('oferta_id,status').eq('repartidor_id', repCurrentUser.id).in('oferta_id', ofertaIds);
+  const misPostMap = {};
+  (misPost || []).forEach(p => misPostMap[p.oferta_id] = p.status);
+
+  list.innerHTML = ofertas.map(o => {
+    const fecha = new Date(o.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    const hora = `${(o.hora_desde || '').substring(0,5)} – ${(o.hora_hasta || '').substring(0,5)}`;
+    const miEstado = misPostMap[o.id];
+    let accionHtml;
+    if (miEstado === 'pendiente') {
+      accionHtml = `<div style="text-align:center;padding:9px;font-size:12px;font-weight:700;color:#856404;background:#fff3cd;border-radius:8px">⏳ Ya te postulaste — esperando respuesta</div>`;
+    } else if (miEstado === 'aceptado') {
+      accionHtml = `<div style="text-align:center;padding:9px;font-size:12px;font-weight:700;color:var(--green);background:#d4edda;border-radius:8px">✅ ¡Fuiste aceptado para este turno!</div>`;
+    } else if (miEstado === 'rechazado') {
+      accionHtml = `<div style="text-align:center;padding:9px;font-size:12px;font-weight:700;color:var(--red);background:#fde8e8;border-radius:8px">No fuiste seleccionado esta vez</div>`;
+    } else {
+      accionHtml = `<button class="btn-pedir-turno" style="margin-bottom:0" onclick="repPostularVacante('${o.id}')">🙋 Postularme</button>`;
+    }
+    return `<div class="turno-card" style="border-left:4px solid var(--gold)">
+      <div class="turno-card-header">
+        <div class="turno-card-fecha">📅 ${fecha}</div>
+        <span class="turno-card-status" style="background:#fdf2e0;color:var(--gold)">${o.cupos > 1 ? o.cupos + ' cupos' : '1 cupo'}</span>
+      </div>
+      <div class="turno-card-hora">🕐 ${hora}</div>
+      ${o.notas ? `<div class="turno-card-notas">"${repEsc(o.notas)}"</div>` : ''}
+      <div style="margin-top:8px">${accionHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+async function repPostularVacante(ofertaId) {
+  if (!repCurrentUser) return;
+  const { data: existe } = await db.from('chipas_turno_postulantes')
+    .select('id').eq('oferta_id', ofertaId).eq('repartidor_id', repCurrentUser.id).limit(1);
+  if (existe && existe.length) { showToast('Ya te postulaste a este turno'); return; }
+  const { error } = await db.from('chipas_turno_postulantes').insert({
+    oferta_id: ofertaId,
+    repartidor_id: repCurrentUser.id,
+    repartidor_nombre: repCurrentUser.nombre,
+    status: 'pendiente',
+    created_at: new Date().toISOString()
+  });
+  if (error) { showToast('❌ No se pudo enviar la postulación'); console.error(error); return; }
+  showToast('✅ Postulación enviada. Esperá la confirmación.');
+  await repLoadVacantesAbiertas();
+  await repLoadMisPostulaciones();
+}
+
+async function repLoadMisPostulaciones() {
+  const list = document.getElementById('rep-mis-postulaciones-list');
+  if (!list || !repCurrentUser) return;
+  const { data: postulaciones, error } = await db.from('chipas_turno_postulantes')
+    .select('*').eq('repartidor_id', repCurrentUser.id).order('created_at', { ascending: false }).limit(15);
+  if (error || !postulaciones || !postulaciones.length) {
+    list.innerHTML = '<div class="turno-empty">No te postulaste a ninguna vacante todavía.</div>';
+    return;
+  }
+  const ofertaIds = [...new Set(postulaciones.map(p => p.oferta_id))];
+  const { data: ofertas } = await db.from('chipas_ofertas_turno').select('*').in('id', ofertaIds);
+  const ofertasMap = {};
+  (ofertas || []).forEach(o => ofertasMap[o.id] = o);
+  const statusLabel = { pendiente: '⏳ Pendiente', aceptado: '✅ Aceptado', rechazado: '❌ No seleccionado' };
+  list.innerHTML = postulaciones.map(p => {
+    const o = ofertasMap[p.oferta_id] || {};
+    const fecha = o.fecha ? new Date(o.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '—';
+    const hora = o.hora_desde ? `${o.hora_desde.substring(0,5)} – ${(o.hora_hasta || '').substring(0,5)}` : '';
+    return `<div class="turno-card ${p.status}">
+      <div class="turno-card-header">
+        <div class="turno-card-fecha">📅 ${fecha}</div>
+        <span class="turno-card-status ${p.status}">${statusLabel[p.status] || p.status}</span>
+      </div>
+      ${hora ? `<div class="turno-card-hora">🕐 ${hora}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
 // ===== TURNOS (admin) =====
 let adminTurnosChannel = null;
 
+let ofertaFechaFormInited = false;
+
 async function loadAdminTurnos() {
   loadAdminZonasExtra();
+  loadAdminVacantes();
+  if (!ofertaFechaFormInited) { ofertaFechaFormInited = true; buildOfertaFechasUI(); }
   const list = document.getElementById('admin-turnos-list');
   if (!list) return;
   const { data, error } = await db.from('chipas_turnos')
@@ -5893,11 +6102,10 @@ async function loadAdminTurnos() {
     .order('created_at', { ascending: true });
   if (error || !data || !data.length) {
     list.innerHTML = '<div class="admin-turnos-empty">📭 No hay solicitudes de turnos todavía.</div>';
-    updateTurnosBadge(0);
+    refreshTurnosBadgeCombinado();
     return;
   }
-  const pendientes = data.filter(t => t.status === 'pendiente');
-  updateTurnosBadge(pendientes.length);
+  refreshTurnosBadgeCombinado();
   list.innerHTML = data.map(t => {
     const fecha = new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday:'long', day:'2-digit', month:'2-digit', year:'2-digit' });
     const hora = t.hora_desde && t.hora_hasta ? `${t.hora_desde.substring(0,5)} – ${t.hora_hasta.substring(0,5)}` : t.hora_desde ? `Desde ${t.hora_desde.substring(0,5)}` : 'Sin horario especificado';
@@ -5919,6 +6127,204 @@ async function loadAdminTurnos() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ===== VACANTES DE TURNO (admin) =====
+let ofertaFechaRows = [{ id: 0, value: '' }];
+let ofertaFechaNextId = 1;
+
+function syncOfertaFechasFromDOM() {
+  ofertaFechaRows = ofertaFechaRows.map(r => ({ ...r, value: document.getElementById('oferta-fecha-' + r.id)?.value || r.value }));
+}
+
+function buildOfertaFechasUI() {
+  const list = document.getElementById('oferta-fechas-list');
+  if (!list) return;
+  list.innerHTML = ofertaFechaRows.map(r => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--cream);border:1.5px solid var(--border);border-radius:10px;padding:8px 10px">
+      <input type="date" id="oferta-fecha-${r.id}" value="${r.value}" style="flex:1;border:none;background:transparent;font-size:13px;font-family:inherit;color:var(--text);outline:none" />
+      ${ofertaFechaRows.length > 1 ? `<button onclick="deleteOfertaFechaRow(${r.id})" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1">✕</button>` : ''}
+    </div>`).join('');
+}
+
+function addOfertaFechaRow() {
+  syncOfertaFechasFromDOM();
+  ofertaFechaRows.push({ id: ofertaFechaNextId++, value: '' });
+  buildOfertaFechasUI();
+}
+
+function deleteOfertaFechaRow(id) {
+  syncOfertaFechasFromDOM();
+  ofertaFechaRows = ofertaFechaRows.filter(r => r.id !== id);
+  if (!ofertaFechaRows.length) ofertaFechaRows.push({ id: ofertaFechaNextId++, value: '' });
+  buildOfertaFechasUI();
+}
+
+async function publicarOfertaTurno() {
+  syncOfertaFechasFromDOM();
+  const fechas = [...new Set(ofertaFechaRows.map(r => r.value).filter(Boolean))];
+  const horaDesde = document.getElementById('oferta-hora-desde').value;
+  const horaHasta = document.getElementById('oferta-hora-hasta').value;
+  const cupos = parseInt(document.getElementById('oferta-cupos').value, 10) || 1;
+  const notas = document.getElementById('oferta-notas').value.trim();
+  if (!fechas.length) { showToast('Elegí al menos un día'); return; }
+  if (!horaDesde || !horaHasta) { showToast('Completá el horario (desde y hasta)'); return; }
+
+  const btn = document.getElementById('btn-publicar-vacante');
+  btn.disabled = true; btn.textContent = 'Publicando...';
+
+  const rows = fechas.map(fecha => ({
+    fecha, hora_desde: horaDesde, hora_hasta: horaHasta,
+    notas: notas || null, cupos, status: 'abierto', created_at: new Date().toISOString()
+  }));
+  const { error } = await db.from('chipas_ofertas_turno').insert(rows);
+
+  btn.disabled = false; btn.textContent = '📤 Publicar vacante';
+  if (error) { showToast('❌ No se pudo publicar. Revisá la tabla chipas_ofertas_turno.'); console.error(error); return; }
+
+  // Notificar a todos los repartidores activos
+  const { data: activos } = await db.from('chipas_repartidores').select('id').eq('activo', true);
+  if (activos && activos.length) {
+    const fechasLabel = fechas.map(f => new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' })).join(', ');
+    const msg = `📢 Nueva vacante de turno: ${horaDesde.substring(0,5)} a ${horaHasta.substring(0,5)} el ${fechasLabel}. ¡Postulate!`;
+    const notifRows = activos.map(r => ({ repartidor_id: r.id, tipo: 'vacante_turno', mensaje: msg, leida: false, created_at: new Date().toISOString() }));
+    await db.from('chipas_notificaciones').insert(notifRows).catch(() => {});
+  }
+
+  showToast(`✅ Vacante publicada para ${fechas.length} día(s)`);
+  ofertaFechaRows = [{ id: ofertaFechaNextId++, value: '' }];
+  buildOfertaFechasUI();
+  document.getElementById('oferta-hora-desde').value = '';
+  document.getElementById('oferta-hora-hasta').value = '';
+  document.getElementById('oferta-cupos').value = '1';
+  document.getElementById('oferta-notas').value = '';
+  loadAdminVacantes();
+}
+
+async function loadAdminVacantes() {
+  const list = document.getElementById('admin-vacantes-list');
+  if (!list) return;
+  const { data: ofertas, error } = await db.from('chipas_ofertas_turno')
+    .select('*').neq('status', 'cancelado').order('fecha', { ascending: true }).order('hora_desde', { ascending: true });
+  if (error || !ofertas || !ofertas.length) {
+    list.innerHTML = '<div class="admin-turnos-empty">📭 No hay vacantes publicadas todavía.</div>';
+    refreshTurnosBadgeCombinado();
+    return;
+  }
+  const ofertaIds = ofertas.map(o => o.id);
+  const { data: postulantes } = await db.from('chipas_turno_postulantes')
+    .select('*').in('oferta_id', ofertaIds).order('created_at', { ascending: true });
+  const postPorOferta = {};
+  (postulantes || []).forEach(p => { (postPorOferta[p.oferta_id] = postPorOferta[p.oferta_id] || []).push(p); });
+
+  const statusColor = { abierto: 'var(--orange)', cubierto: 'var(--green)' };
+  const statusLabel = { abierto: '🟡 Abierto', cubierto: '✅ Cubierto' };
+  const postStatusLabel = { pendiente: '⏳ Pendiente', aceptado: '✅ Aceptado', rechazado: '❌ Rechazado' };
+  const postStatusColor = { pendiente: 'var(--orange)', aceptado: 'var(--green)', rechazado: 'var(--red)' };
+
+  list.innerHTML = ofertas.map(o => {
+    const fecha = new Date(o.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday:'long', day:'2-digit', month:'2-digit', year:'2-digit' });
+    const hora = `${(o.hora_desde||'').substring(0,5)} – ${(o.hora_hasta||'').substring(0,5)}`;
+    const postulantesOferta = postPorOferta[o.id] || [];
+    const aceptados = postulantesOferta.filter(p => p.status === 'aceptado').length;
+    const postulantesHtml = postulantesOferta.length ? postulantesOferta.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border)">
+        <div style="font-size:12px">
+          <span style="font-weight:700;color:var(--navy)">👤 ${repEsc(p.repartidor_nombre || 'Repartidor')}</span>
+          <span style="margin-left:6px;color:${postStatusColor[p.status]||'var(--muted)'};font-weight:700">${postStatusLabel[p.status]||p.status}</span>
+        </div>
+        ${p.status === 'pendiente' ? `
+        <div style="display:flex;gap:6px">
+          <button class="btn-turno-accept" style="padding:5px 10px;font-size:11px" onclick="adminAceptarPostulante('${p.id}','${o.id}','${p.repartidor_id}','${repEsc(p.repartidor_nombre||'')}')">✅</button>
+          <button class="btn-turno-reject" style="padding:5px 10px;font-size:11px" onclick="adminRechazarPostulante('${p.id}','${p.repartidor_id}')">✕</button>
+        </div>` : ''}
+      </div>`).join('') : `<div style="font-size:12px;color:var(--muted);padding-top:7px;border-top:1px solid var(--border)">Sin postulantes todavía.</div>`;
+
+    return `<div class="admin-turno-card">
+      <div class="admin-turno-header">
+        <div style="flex:1;min-width:0">
+          <div class="admin-turno-nombre">📅 ${fecha}</div>
+          <div class="admin-turno-fecha">🕐 ${hora} · 👥 ${aceptados}/${o.cupos||1} cubiertos</div>
+          ${o.notas ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;font-style:italic">"${repEsc(o.notas)}"</div>` : ''}
+          <div style="font-size:11px;font-weight:700;color:${statusColor[o.status]||'var(--muted)'};margin-top:4px">${statusLabel[o.status]||o.status}</div>
+        </div>
+        ${o.status === 'abierto' ? `<button onclick="adminCancelarOferta('${o.id}')" style="padding:6px 10px;background:var(--cream2);border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted)">🗑 Cancelar</button>` : ''}
+      </div>
+      ${postulantesHtml}
+    </div>`;
+  }).join('');
+
+  refreshTurnosBadgeCombinado();
+}
+
+async function adminAceptarPostulante(postId, ofertaId, repId, repNombre) {
+  const { error } = await db.from('chipas_turno_postulantes').update({ status: 'aceptado' }).eq('id', postId);
+  if (error) { showToast('❌ Error al aceptar'); return; }
+
+  await db.from('chipas_notificaciones').insert({
+    repartidor_id: repId, tipo: 'turno_postulacion_aceptada',
+    mensaje: '✅ ¡Fuiste aceptado para el turno al que te postulaste! Revisá "Vacantes" para ver el detalle.',
+    leida: false, created_at: new Date().toISOString()
+  }).catch(() => {});
+
+  // Si ya se cubrieron todos los cupos, cerrar la oferta y rechazar al resto de postulantes pendientes
+  const { data: oferta } = await db.from('chipas_ofertas_turno').select('*').eq('id', ofertaId).single();
+  const { data: postulantes } = await db.from('chipas_turno_postulantes').select('*').eq('oferta_id', ofertaId);
+  const aceptados = (postulantes || []).filter(p => p.status === 'aceptado').length;
+
+  if (oferta && aceptados >= (oferta.cupos || 1)) {
+    await db.from('chipas_ofertas_turno').update({ status: 'cubierto' }).eq('id', ofertaId);
+    const pendientesRestantes = (postulantes || []).filter(p => p.status === 'pendiente');
+    if (pendientesRestantes.length) {
+      await db.from('chipas_turno_postulantes').update({ status: 'rechazado' }).in('id', pendientesRestantes.map(p => p.id));
+      const notifRows = pendientesRestantes.map(p => ({
+        repartidor_id: p.repartidor_id, tipo: 'turno_postulacion_rechazada',
+        mensaje: '❌ Ese horario ya fue cubierto por otro repartidor.',
+        leida: false, created_at: new Date().toISOString()
+      }));
+      await db.from('chipas_notificaciones').insert(notifRows).catch(() => {});
+    }
+  }
+
+  showToast(`✅ ${repNombre} fue aceptado para el turno`);
+  loadAdminVacantes();
+}
+
+async function adminRechazarPostulante(postId, repId) {
+  const { error } = await db.from('chipas_turno_postulantes').update({ status: 'rechazado' }).eq('id', postId);
+  if (error) { showToast('❌ Error al rechazar'); return; }
+  await db.from('chipas_notificaciones').insert({
+    repartidor_id: repId, tipo: 'turno_postulacion_rechazada',
+    mensaje: '❌ Tu postulación a ese horario no fue aceptada.',
+    leida: false, created_at: new Date().toISOString()
+  }).catch(() => {});
+  showToast('Postulante rechazado');
+  loadAdminVacantes();
+}
+
+async function adminCancelarOferta(ofertaId) {
+  if (!confirm('¿Cancelar esta vacante? Los postulantes pendientes serán notificados.')) return;
+  const { data: postulantes } = await db.from('chipas_turno_postulantes').select('*').eq('oferta_id', ofertaId).eq('status', 'pendiente');
+  const { error } = await db.from('chipas_ofertas_turno').update({ status: 'cancelado' }).eq('id', ofertaId);
+  if (error) { showToast('❌ Error al cancelar'); return; }
+  if (postulantes && postulantes.length) {
+    await db.from('chipas_turno_postulantes').update({ status: 'rechazado' }).in('id', postulantes.map(p => p.id));
+    const notifRows = postulantes.map(p => ({
+      repartidor_id: p.repartidor_id, tipo: 'turno_postulacion_rechazada',
+      mensaje: '❌ El horario al que te postulaste fue cancelado por el negocio.',
+      leida: false, created_at: new Date().toISOString()
+    }));
+    await db.from('chipas_notificaciones').insert(notifRows).catch(() => {});
+  }
+  showToast('Vacante cancelada');
+  loadAdminVacantes();
+}
+
+async function refreshTurnosBadgeCombinado() {
+  const { data: turnosPend } = await db.from('chipas_turnos').select('id').eq('status', 'pendiente');
+  const { data: postPend } = await db.from('chipas_turno_postulantes').select('id').eq('status', 'pendiente');
+  const n = (turnosPend?.length || 0) + (postPend?.length || 0);
+  updateTurnosBadge(n);
 }
 
 async function loadAdminDevoluciones() {
@@ -6111,6 +6517,19 @@ function initAdminTurnosRealtime() {
       }
       // If panel is open, reload
       if (document.getElementById('admin-panel-turnos')?.style.display === 'block') loadAdminTurnos();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chipas_turno_postulantes' }, (payload) => {
+      if (!payload.new) return;
+      const rep = payload.new.repartidor_nombre || 'Un repartidor';
+      sendBrowserNotification('🙋 Nueva postulación a vacante', `${rep} se postuló a un turno`, 'postulante-' + payload.new.id);
+      showToast(`🙋 ${rep} se postuló a una vacante de turno`);
+      const b = document.getElementById('badge-turnos');
+      if (b) {
+        const cur = parseInt(b.textContent || '0') + 1;
+        b.textContent = cur;
+        b.style.display = 'inline-flex';
+      }
+      if (document.getElementById('admin-panel-turnos')?.style.display === 'block') loadAdminVacantes();
     })
     .subscribe();
 }
