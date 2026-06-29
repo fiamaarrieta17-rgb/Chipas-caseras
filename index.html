@@ -1390,9 +1390,10 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         </div>
         <div class="payment-titular" id="payment-titular"></div>
         <div class="form-group" id="campo-nombre-transferencia" style="margin:12px 0 4px">
-          <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">¿TRANSFERÍS DESDE OTRA CUENTA? <span style="font-weight:400">(opcional)</span></label>
-          <input type="text" id="f-nombre-transferencia" placeholder="Nombre del titular si no es el tuyo" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none" />
-          <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px">Dejalo vacío si transferís desde tu propia cuenta.</div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">NOMBRE DEL TITULAR <span style="color:var(--red)">*</span></label>
+          <input type="text" id="f-nombre-transferencia" placeholder="Ej: María González" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none" />
+          <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px">Ingresá el nombre tal cual aparece en tu Mercado Pago, Modo, Ualá u otra billetera virtual.</div>
+          <div id="e-nombre-transferencia" class="field-error">Ingresá el nombre del titular de la transferencia</div>
         </div>
         <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
         <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
@@ -2672,7 +2673,13 @@ function validate() {
     if (!val) { err.classList.add('show'); ok = false; }
     else err.classList.remove('show');
   });
-  // Campo nombre_transferencia es opcional — no se valida como obligatorio
+  // Campo nombre_transferencia es obligatorio cuando se paga con transferencia
+  if (selectedPaymentMethod === 'transferencia') {
+    const val = document.getElementById('f-nombre-transferencia').value.trim();
+    const err = document.getElementById('e-nombre-transferencia');
+    if (!val) { if (err) err.classList.add('show'); ok = false; }
+    else if (err) err.classList.remove('show');
+  }
   const hasItems = prices.some(p => (quantities[p.id] || 0) > 0);
   if (!hasItems) { showToast('Seleccioná al menos un producto'); ok = false; }
   return ok;
@@ -2768,6 +2775,8 @@ function selectPaymentMethod(method) {
   if (method !== 'transferencia') {
     const inp = document.getElementById('f-nombre-transferencia');
     if (inp) inp.value = '';
+    const err = document.getElementById('e-nombre-transferencia');
+    if (err) err.classList.remove('show');
   }
 }
 
@@ -3107,7 +3116,7 @@ function renderAdminOrders() {
             <div class="order-id">${order.id}</div>
             <span class="status-pill pill-${order.status}">${PILLS[order.status]||order.status}</span>
             ${order.is_encargo ? '<span class="status-pill pill-encargo">📝 Encargo</span>' : ''}
-            ${order.pago_avisado && order.metodo_pago === 'efectivo' ? '<span class="status-pill" style="background:#fff3cd;color:#856404">💵 Efectivo</span>' : order.pago_avisado ? '<span class="status-pill" style="background:#d4edda;color:var(--green)">💳 Transferencia</span>' : ''}
+            ${order.pago_avisado && order.metodo_pago === 'efectivo' ? '<span class="status-pill" style="background:#fff3cd;color:#856404">💵 Efectivo</span>' : order.pago_avisado ? `<span class="status-pill" style="background:#d4edda;color:var(--green)">💳 ${order.nombre_transferencia ? order.nombre_transferencia : 'Transferencia'}</span>` : ''}
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
           <div class="order-name">${order.nombre}</div>
