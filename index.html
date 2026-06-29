@@ -1471,8 +1471,9 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     </div>
 
     <div id="post-order-actions" style="display:none">
-      <button class="edit-btn" onclick="editOrder()">✏️ Modificar mi pedido</button>
-      <button class="cancel-btn" onclick="cancelOrder()">✕ Cancelar pedido</button>
+      <button id="btn-edit-order" class="edit-btn" onclick="editOrder()">✏️ Modificar mi pedido</button>
+      <button id="btn-cancel-order" class="cancel-btn" onclick="cancelOrder()">✕ Cancelar pedido</button>
+      <div id="edit-locked-msg" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:#fff3e0;border-radius:8px;border:1px solid #ffe0b2">🏍️ Tu pedido ya salió, no se puede modificar</div>
     </div>
   </div>
 </div>
@@ -2716,7 +2717,8 @@ async function submitOrder() {
     recargo,
     notas: document.getElementById('f-notas').value.trim(),
     nombre_transferencia: selectedPaymentMethod === 'transferencia' ? document.getElementById('f-nombre-transferencia').value.trim() : '',
-    items, total, status: 'pendiente',
+    items, total,
+    ...(editMode ? {} : { status: 'pendiente' }),
     is_encargo: modoEncargo && !editMode,
     updated_at: new Date().toISOString(),
     edited_at: editMode ? new Date().toISOString() : null
@@ -2738,12 +2740,13 @@ async function submitOrder() {
   myOrderId = orderId;
   sessionStorage.setItem('chipas_order_id', myOrderId);
   localStorage.setItem('chipas_order_id', myOrderId);
+  const wasEditMode = editMode;
   editMode = false;
 
   document.getElementById('order-form-card').style.display = 'none';
   document.getElementById('success-msg').classList.add('visible');
-  document.getElementById('success-msg').querySelector('h3').textContent = modoEncargo ? '📝 ¡Encargo recibido!' : '✅ ¡Pedido enviado!';
-  document.getElementById('success-msg').querySelector('p').textContent = modoEncargo ? 'Te avisamos cuando lo aceptemos 💛' : 'Te avisamos cuando esté listo 💛';
+  document.getElementById('success-msg').querySelector('h3').textContent = wasEditMode ? '✅ ¡Pedido actualizado!' : modoEncargo ? '📝 ¡Encargo recibido!' : '✅ ¡Pedido enviado!';
+  document.getElementById('success-msg').querySelector('p').textContent = wasEditMode ? 'Tus cambios fueron guardados 💛' : modoEncargo ? 'Te avisamos cuando lo aceptemos 💛' : 'Te avisamos cuando esté listo 💛';
   document.getElementById('post-order-actions').style.display = 'block';
   document.getElementById('btn-submit').textContent = 'Hacer pedido →';
   document.getElementById('btn-submit').style.background = '';
@@ -2790,12 +2793,23 @@ function selectPaymentMethod(method) {
 
 async function markAsPaid() {
   if (!myOrderId) return;
+  // Validar nombre del titular antes de avisar
+  const nombreInput = document.getElementById('f-nombre-transferencia');
+  const nombreErr = document.getElementById('e-nombre-transferencia');
+  const nombre = nombreInput ? nombreInput.value.trim() : '';
+  if (!nombre) {
+    if (nombreErr) nombreErr.classList.add('show');
+    nombreInput && nombreInput.focus();
+    showToast('Ingresá el nombre del titular de la transferencia');
+    return;
+  }
+  if (nombreErr) nombreErr.classList.remove('show');
   const btn = document.getElementById('btn-ya-pague');
   btn.disabled = true; btn.textContent = 'Avisando...';
   const { error } = await db.from('chipas_orders').update({
     pago_avisado: true, pago_avisado_at: new Date().toISOString(),
-    metodo_pago: 'transferencia'
-    // FUTURO MP: pago_mp_verificado: false
+    metodo_pago: 'transferencia',
+    nombre_transferencia: nombre
   }).eq('id', myOrderId);
   if (error) {
     showToast('❌ No se pudo avisar, intentá de nuevo');
@@ -2894,7 +2908,14 @@ function updateStatusTracker(order) {
 
   const postActions = document.getElementById('post-order-actions');
   const showPayment = (order.status === 'pendiente' || order.status === 'aceptado');
+  const canEdit = (order.status === 'pendiente' || order.status === 'aceptado');
   postActions.style.display = showPayment ? 'block' : 'none';
+  const editBtn = document.getElementById('btn-edit-order');
+  const cancelBtn = document.getElementById('btn-cancel-order');
+  const editLocked = document.getElementById('edit-locked-msg');
+  if (editBtn) editBtn.style.display = canEdit ? 'inline-block' : 'none';
+  if (cancelBtn) cancelBtn.style.display = canEdit ? 'inline-block' : 'none';
+  if (editLocked) editLocked.style.display = order.status === 'en_camino' ? 'block' : 'none';
 
   paymentCard.classList.toggle('visible', showPayment);
   if (showPayment) {
@@ -2908,6 +2929,11 @@ function updateStatusTracker(order) {
     }
     const btnPagar = document.getElementById('btn-ya-pague');
     const btnEfectivo = document.getElementById('btn-confirmar-efectivo');
+    // Pre-rellenar nombre si ya fue guardado
+    if (order.nombre_transferencia) {
+      const inp = document.getElementById('f-nombre-transferencia');
+      if (inp && !inp.value) inp.value = order.nombre_transferencia;
+    }
     if (order.pago_avisado) {
       if (btnPagar) { btnPagar.disabled = true; btnPagar.textContent = '✅ Ya avisaste que pagaste'; }
       if (btnEfectivo) { btnEfectivo.disabled = true; btnEfectivo.textContent = '✅ Pedido confirmado'; }
