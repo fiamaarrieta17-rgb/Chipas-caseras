@@ -1089,7 +1089,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       <div class="status-steps">
         <div class="status-step"><div class="step-circle" id="step-0">📋</div><div class="step-label" id="label-0">Recibido</div></div>
         <div class="status-step"><div class="step-circle" id="step-1">✅</div><div class="step-label" id="label-1">Aceptado</div></div>
-        <div class="status-step"><div class="step-circle" id="step-2">🛵</div><div class="step-label" id="label-2">En camino</div></div>
+        <div class="status-step"><div class="step-circle" id="step-2">🏍️</div><div class="step-label" id="label-2">En camino</div></div>
         <div class="status-step"><div class="step-circle" id="step-3">🏠</div><div class="step-label" id="label-3">Llegó</div></div>
       </div>
       <div id="my-order-detail"></div>
@@ -1206,7 +1206,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
             <div class="d-fee">Sin recargo</div>
           </div>
           <div class="delivery-option" id="opt-domicilio" onclick="setDeliveryMethod('domicilio')">
-            <div class="d-icon">🛵</div>
+            <div class="d-icon">🏍️</div>
             <div class="d-label">A domicilio</div>
             <div class="d-fee" id="domicilio-fee-hint">+$1.000</div>
           </div>
@@ -1377,7 +1377,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 
           <!-- ENVÍO A DOMICILIO POR LOCALIDAD -->
           <div class="config-card" style="max-width:540px;margin-top:20px">
-            <h2>🛵 Envío a domicilio por localidad</h2>
+            <h2>🏍️ Envío a domicilio por localidad</h2>
             <div class="config-intro">El cliente elige su localidad y se le suma el costo correspondiente. Si no hay localidades cargadas, el envío no tiene recargo extra.</div>
             <div class="loc-col-labels"><span>Localidad</span><span>Precio envío ($)</span></div>
             <div class="localidades-list" id="localidades-list"></div>
@@ -1454,7 +1454,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
           </div><!-- /config-card horario -->
           <!-- REPARTIDORES (usuario + PIN, multi-usuario) -->
           <div class="config-card" style="max-width:480px;margin-top:0">
-            <h2>🛵 Acceso repartidor</h2>
+            <h2>🏍️ Acceso repartidor</h2>
             <div class="config-intro">Cada repartidor entra con su propio usuario y PIN a su panel exclusivo (<code>?repartidor</code>). Podés agregar más cuando quieras y desactivarlos sin borrarlos.</div>
             <div class="localidades-list" id="rep-users-list"></div>
             <button class="btn-add-localidad" onclick="addRepUserRow()">+ Agregar repartidor</button>
@@ -1558,13 +1558,13 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 <!-- ===================== REPARTIDOR ===================== -->
 <div id="view-repartidor" style="display:none">
   <div id="rep-loader">
-    <h2>🛵 <span>Repartidor</span></h2>
+    <h2>🏍️ <span>Repartidor</span></h2>
     <div class="spinner"></div>
   </div>
 
   <div id="view-rep-login" style="display:none">
     <div class="rep-login-box">
-      <div class="rep-login-icon">🛵</div>
+      <div class="rep-login-icon">🏍️</div>
       <div class="rep-login-title">Panel <span>Repartidor</span></div>
       <div class="rep-login-sub">Ingresá tu usuario y PIN para continuar</div>
       <div class="rep-form-group">
@@ -1586,7 +1586,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div class="rep-header">
       <div class="rep-header-top">
         <div>
-          <h1>&#x1F6F5; Panel <span>Repartidor</span></h1>
+          <h1>&#x1F3CD;&#xFE0F; Panel <span>Repartidor</span></h1>
           <div class="rep-header-sub" id="rep-header-sub">Cargando pedidos...</div>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
@@ -2332,10 +2332,10 @@ function updateCartSummary() {
   });
   const fee = deliveryMethod === 'domicilio' ? getLocalidadFee() : 0;
   if (hasItems && deliveryMethod === 'domicilio' && fee > 0) {
-    lines += `<div class="cart-row"><span>🛵 Envío a domicilio</span><span>${formatPrice(fee)}</span></div>`;
+    lines += `<div class="cart-row"><span>🏍️ Envío a domicilio</span><span>${formatPrice(fee)}</span></div>`;
     total += fee;
   } else if (hasItems && deliveryMethod === 'domicilio' && fee === 0 && localidades.length > 0) {
-    lines += `<div class="cart-row"><span>🛵 Envío a domicilio</span><span style="color:var(--green)">Sin recargo</span></div>`;
+    lines += `<div class="cart-row"><span>🏍️ Envío a domicilio</span><span style="color:var(--green)">Sin recargo</span></div>`;
   }
   if (hasItems) { cart.classList.add('visible'); itemsEl.innerHTML = lines; totalEl.textContent = formatPrice(total); }
   else cart.classList.remove('visible');
@@ -2502,7 +2502,7 @@ function notifyStatusChangeIfNeeded(order) {
     const title = order.is_encargo ? '📝 ¡Encargo aceptado!' : '✅ ¡Tu pedido fue aceptado!';
     sendBrowserNotification(title, msg, 'chipas-status-' + order.id);
   } else if (order.status === 'en_camino') {
-    sendBrowserNotification('🛵 ¡Tu pedido está en camino!', 'Ya salió, te llega pronto.', 'chipas-status-' + order.id);
+    sendBrowserNotification('🏍️ ¡Tu pedido está en camino!', 'Ya salió, te llega pronto.', 'chipas-status-' + order.id);
   } else if (order.status === 'entregado') {
     sendBrowserNotification('🏠 ¡Tus chipas llegaron!', 'Que las disfrutes 💛', 'chipas-status-' + order.id);
   }
@@ -2538,7 +2538,7 @@ function updateStatusTracker(order) {
     showTrackingLink(order.id);
   }
   const currentStep = STATUS_MAP[order.status] || 0;
-  const emojis = ['📋','✅','🛵','🏠'];
+  const emojis = ['📋','✅','🏍️','🏠'];
   const labels = ['Recibido','Aceptado','En camino','Llegó'];
 
   for (let i = 0; i < 4; i++) {
@@ -2551,7 +2551,7 @@ function updateStatusTracker(order) {
   }
 
   document.getElementById('my-order-detail').innerHTML =
-    `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🛵 A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>`;
+    `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>`;
 
   const postActions = document.getElementById('post-order-actions');
   const showPayment = (order.status === 'pendiente' || order.status === 'aceptado');
@@ -2699,7 +2699,7 @@ async function loadAdminOrders() {
   renderAdminOrders();
 }
 
-const PILLS = { pendiente:'🕐 Pendiente', aceptado:'✅ Aceptado', en_camino:'🛵 En camino', entregado:'🏠 Entregado', cancelado:'✕ Cancelado' };
+const PILLS = { pendiente:'🕐 Pendiente', aceptado:'✅ Aceptado', en_camino:'🏍️ En camino', entregado:'🏠 Entregado', cancelado:'✕ Cancelado' };
 
 function renderAdminOrders() {
   const today = new Date().toDateString();
@@ -2753,7 +2753,7 @@ function renderAdminOrders() {
       actions = `<button class="action-btn btn-accept" onclick="adminUpdateStatus('${order.id}','aceptado')">✅ Aceptar</button>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Rechazar</button>`;
     } else if (order.status === 'aceptado') {
-      actions = `<button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🛵 Enviar</button>
+      actions = `<button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🏍️ Enviar</button>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>
                  <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else if (order.status === 'en_camino') {
@@ -2779,7 +2779,7 @@ function renderAdminOrders() {
             ${isNew ? '<span style="background:#c9933a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:1px">NUEVO</span>' : ''}
           </div>
           <div class="order-name">${order.nombre}</div>
-          <div class="order-meta">${(order.entrega || 'domicilio') === 'domicilio' ? '🛵 Envío' : '🏃 Retira'} · 📱 ${order.cel} · ${timeAgo(order.created_at)}</div>
+          <div class="order-meta">${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ Envío' : '🏃 Retira'} · 📱 ${order.cel} · ${timeAgo(order.created_at)}</div>
           ${order.edited_at ? `<div class="time-ago" style="color:var(--orange)">✏️ Modificado ${timeAgo(order.edited_at)}</div>` : ''}
         </div>
         <div style="text-align:right">
@@ -2805,7 +2805,7 @@ function renderAdminOrders() {
         ${order.notas ? `<div class="notes-box">💬 ${order.notas}</div>` : ''}
         <div class="order-items">
           ${order.items.map(i => `<div class="order-item-row"><span>${i.name} × ${i.qty}</span><span style="font-weight:600">${formatPrice(i.subtotal)}</span></div>`).join('')}
-          ${order.recargo ? `<div class="order-item-row"><span>🛵 Envío a domicilio</span><span style="font-weight:600">${formatPrice(order.recargo)}</span></div>` : ''}
+          ${order.recargo ? `<div class="order-item-row"><span>🏍️ Envío a domicilio</span><span style="font-weight:600">${formatPrice(order.recargo)}</span></div>` : ''}
           <div class="order-item-row" style="font-weight:700;color:var(--gold)"><span>TOTAL</span><span>${formatPrice(order.total)}</span></div>
         </div>
         <div class="order-actions">${actions}</div>
@@ -2848,7 +2848,7 @@ async function adminUpdateStatus(id, status) {
   if (status === 'aceptado') updateData.chat_accepted_at = new Date().toISOString();
   const { error } = await db.from('chipas_orders').update(updateData).eq('id', id);
   if (error) { showToast('❌ Error al actualizar'); return; }
-  const msgs = { aceptado:'✅ Pedido aceptado', en_camino:'🛵 Pedido en camino', entregado:'🏠 Pedido entregado', cancelado:'✕ Pedido cancelado' };
+  const msgs = { aceptado:'✅ Pedido aceptado', en_camino:'🏍️ Pedido en camino', entregado:'🏠 Pedido entregado', cancelado:'✕ Pedido cancelado' };
   showToast(msgs[status] || 'Actualizado');
   // Si se acepta, programar cierre automático del chat en 1hr (en el admin también)
   if (status === 'aceptado') {
@@ -3069,7 +3069,7 @@ async function loadHistorial() {
     const tr = document.createElement('tr');
     const fecha = new Date(o.updated_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' });
     const hora = new Date(o.updated_at).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-    tr.innerHTML = `<td>${fecha} ${hora}</td><td>${o.nombre}</td><td>${(o.entrega||'domicilio')==='domicilio'?'🛵':'🏃'}</td><td>${formatPrice(o.total)}</td>`;
+    tr.innerHTML = `<td>${fecha} ${hora}</td><td>${o.nombre}</td><td>${(o.entrega||'domicilio')==='domicilio'?'🏍️':'🏃'}</td><td>${formatPrice(o.total)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -3212,7 +3212,7 @@ function renderClientChatMessages() {
     el.innerHTML = chatMessages.map(m => {
       const isFromUs = m.sender === 'admin' || m.sender === 'repartidor';
       const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
-      const label = m.sender === 'repartidor' ? '🛵 Repartidor · ' : m.sender === 'admin' ? '🛍 Vendedor · ' : '';
+      const label = m.sender === 'repartidor' ? '🏍️ Repartidor · ' : m.sender === 'admin' ? '🛍 Vendedor · ' : '';
       return `<div class="chat-msg ${isFromUs ? 'from-admin' : 'from-client'}">
         ${escapeHtml(m.message)}
         <div class="chat-msg-time">${label}${time}</div>
@@ -3318,7 +3318,7 @@ function updateChatFab(order) {
   const titleEl = document.getElementById('chat-modal-title');
   if (titleEl) {
     if (['en_camino', 'entregado'].includes(order.status)) {
-      titleEl.textContent = '🛵 Chat con el repartidor';
+      titleEl.textContent = '🏍️ Chat con el repartidor';
     } else {
       titleEl.textContent = '💬 Chat con el vendedor';
     }
@@ -3388,7 +3388,7 @@ function renderAdminChatMessages(orderId, messages, isClosed, closedBy) {
       const isRep = m.sender === 'repartidor';
       const isFromUs = isAdmin || isRep;
       const time = new Date(m.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
-      const label = isRep ? '🛵 Repartidor · ' : isAdmin ? '🛍 Vos · ' : '👤 Cliente · ';
+      const label = isRep ? '🏍️ Repartidor · ' : isAdmin ? '🛍 Vos · ' : '👤 Cliente · ';
       return `<div class="chat-msg ${isFromUs ? 'from-admin' : 'from-client'}" style="max-width:90%">
         ${escapeHtml(m.message)}
         <div class="chat-msg-time">${label}${time}</div>
@@ -3545,7 +3545,7 @@ function onLocalidadChange() {
   const selected = sel.options[sel.selectedIndex];
   if (selected && selected.value) {
     const precio = Number(selected.dataset.precio) || 0;
-    preview.textContent = precio > 0 ? '🛵 Costo de envío: ' + formatPrice(precio) : '✅ Envío sin recargo a esta localidad';
+    preview.textContent = precio > 0 ? '🏍️ Costo de envío: ' + formatPrice(precio) : '✅ Envío sin recargo a esta localidad';
     preview.style.color = precio > 0 ? 'var(--orange)' : 'var(--green)';
   } else {
     preview.textContent = '';
@@ -4149,7 +4149,7 @@ function repBuildCard(order, position, showDrag) {
   let actions = '';
   if (order.status === 'aceptado') {
     actions = `
-      <button class="rep-btn-action rep-btn-dispatch" onclick="repMarkEnCamino('${order.id}')">&#x1F6F5; Salir a entregar</button>
+      <button class="rep-btn-action rep-btn-dispatch" onclick="repMarkEnCamino('${order.id}')">&#x1F3CD;&#xFE0F; Salir a entregar</button>
       <button class="rep-btn-action rep-btn-whatsapp" onclick="repOpenWhatsApp('${repEsc(order.cel)}','${repEsc(order.nombre)}')">&#x1F4AC; WhatsApp</button>
       <button class="rep-btn-action rep-btn-maps" onclick="repOpenMaps('${repEsc(order.calle)} ${repEsc(order.altura)}, ${repEsc(order.localidad||'')}')">&#x1F4CD; Maps</button>`;
   } else if (order.status === 'en_camino') {
