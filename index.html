@@ -1304,6 +1304,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         <div class="status-step"><div class="step-circle" id="step-3">🏠</div><div class="step-label" id="label-3">Llegó</div></div>
       </div>
       <div id="my-order-detail"></div>
+      <div id="devolucion-pendiente-banner" style="display:none;margin-top:12px;font-size:12px;color:#92400e;background:#fff3cd;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;text-align:center;line-height:1.5"></div>
       <div style="text-align:center;margin-top:10px">
         <a style="font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer" onclick="requestNotificationPermission()">🔔 Activar avisos en este dispositivo</a>
       </div>
@@ -2916,11 +2917,17 @@ async function markAsEfectivo() {
   if (!myOrderId) return;
   const btn = document.getElementById('btn-confirmar-efectivo');
   btn.disabled = true; btn.textContent = 'Confirmando...';
-  const { error } = await db.from('chipas_orders').update({
+  const { data: curOrder } = await db.from('chipas_orders').select('status').eq('id', myOrderId).single();
+  const updatePayload = {
     metodo_pago: 'efectivo',
     pago_avisado: true,
     pago_avisado_at: new Date().toISOString()
-  }).eq('id', myOrderId);
+  };
+  if (curOrder?.status === 'modificado_pago_pendiente') {
+    updatePayload.status = 'pendiente';
+    updatePayload.diferencia_pagada = true;
+  }
+  const { error } = await db.from('chipas_orders').update(updatePayload).eq('id', myOrderId);
   if (error) {
     showToast('❌ Error, intentá de nuevo');
     btn.disabled = false; btn.textContent = '✅ Confirmar pedido en efectivo';
@@ -2952,10 +2959,23 @@ function notifyStatusChangeIfNeeded(order) {
   }
 }
 
+function notifyDevolucionIfNeeded(order) {
+  const key = 'chipas_devolucion_' + order.id;
+  const prevRealizada = sessionStorage.getItem(key) === '1';
+  const nowRealizada = !!order.devolucion_realizada;
+  sessionStorage.setItem(key, nowRealizada ? '1' : '0');
+  if (nowRealizada && !prevRealizada) {
+    const msg = `💸 Te devolvimos ${formatPrice(order.devolucion_monto || 0)} por los productos que sacaste de tu pedido.`;
+    showToast(msg);
+    sendBrowserNotification('💸 ¡Devolución realizada!', msg, 'chipas-devolucion-' + order.id);
+  }
+}
+
 const STATUS_MAP = { pendiente: 0, aceptado: 1, modificado_pago_pendiente: 1, en_camino: 2, entregado: 3 };
 function updateStatusTracker(order) {
   if (!order) return;
   notifyStatusChangeIfNeeded(order);
+  notifyDevolucionIfNeeded(order);
   const statusEl = document.getElementById('my-order-status');
   const arrivedBanner = document.getElementById('arrived-banner');
   const paymentCard = document.getElementById('payment-card');
@@ -2997,6 +3017,16 @@ function updateStatusTracker(order) {
   document.getElementById('my-order-detail').innerHTML =
     `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>${order.repartidor_nombre ? ` · <span style="color:var(--gold-light)">🏍️ Lo lleva ${order.repartidor_nombre}</span>` : ''}`;
 
+  const devBanner = document.getElementById('devolucion-pendiente-banner');
+  if (devBanner) {
+    if (order.devolucion_pendiente) {
+      devBanner.style.display = 'block';
+      devBanner.innerHTML = `💸 Sacaste productos de tu pedido. Te debemos devolver <strong>${formatPrice(order.devolucion_monto || 0)}</strong>. Te avisamos en cuanto se haga.`;
+    } else {
+      devBanner.style.display = 'none';
+    }
+  }
+
   const postActions = document.getElementById('post-order-actions');
   const showPayment = (order.status === 'pendiente' || order.status === 'aceptado' || order.status === 'modificado_pago_pendiente');
   const canEdit = (order.status === 'pendiente' || order.status === 'aceptado');
@@ -3036,24 +3066,28 @@ function updateStatusTracker(order) {
     // Show diff amount if modified order awaiting payment
     const diffBanner = document.getElementById('payment-diff-banner');
     const isDiffPending = order.status === 'modificado_pago_pendiente' && order.diferencia_pago > 0;
-    if (isDiffPending) {
-      if (diffBanner) {
+    const isCash = order.metodo_pago === 'efectivo';
+    if (diffBanner) {
+      if (isDiffPending) {
         diffBanner.style.display = 'block';
-        diffBanner.innerHTML = `<strong>⚠️ Tu pedido fue modificado.</strong><br>Debés transferir la diferencia de <strong>${formatPrice(order.diferencia_pago)}</strong> adicional al mismo alias.`;
+        diffBanner.innerHTML = isCash
+          ? `<strong>⚠️ Tu pedido fue modificado.</strong><br>Nuevo monto a pagar al recibir: <strong>${formatPrice(order.total)}</strong>.`
+          : `<strong>⚠️ Tu pedido fue modificado.</strong><br>Debés transferir la diferencia de <strong>${formatPrice(order.diferencia_pago)}</strong> adicional al mismo alias.`;
+      } else {
+        diffBanner.style.display = 'none';
       }
-      document.getElementById('payment-amount').innerHTML = `Transferí la diferencia: <strong>${formatPrice(order.diferencia_pago)}</strong>`;
-    } else {
-      if (diffBanner) diffBanner.style.display = 'none';
     }
     // Restaurar método de pago si ya eligió efectivo
-    if (order.metodo_pago === 'efectivo') {
+    if (isCash) {
       selectPaymentMethod('efectivo');
+      document.getElementById('payment-amount').innerHTML = isDiffPending
+        ? `Nuevo monto a pagar: <strong>${formatPrice(order.total)}</strong>`
+        : `Total a pagar al recibir: <strong>${formatPrice(order.total)}</strong>`;
     } else {
       selectPaymentMethod('transferencia');
-      // No pisar el mensaje de "transferí la diferencia" con el del total completo
-      if (!isDiffPending) {
-        document.getElementById('payment-amount').innerHTML = `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
-      }
+      document.getElementById('payment-amount').innerHTML = isDiffPending
+        ? `Transferí la diferencia: <strong>${formatPrice(order.diferencia_pago)}</strong>`
+        : `Transferí <strong>${formatPrice(order.total)}</strong> a:`;
       renderPaymentBox();
     }
     const btnPagar = document.getElementById('btn-ya-pague');
