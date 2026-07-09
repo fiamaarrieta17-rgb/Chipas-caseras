@@ -42,6 +42,31 @@ button, input, textarea { font-family: inherit; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in { animation: fadeUp 0.45s ease both; }
 
+/* ===== WIZARD DE COMPRA (pasos) ===== */
+.wizard-progress { display: flex; align-items: flex-start; justify-content: center; gap: 4px; margin: 4px 0 22px; }
+.wiz-dot { display: flex; flex-direction: column; align-items: center; gap: 5px; opacity: 0.4; transition: opacity 0.2s; cursor: default; }
+.wiz-dot.active { opacity: 1; }
+.wiz-dot.done { opacity: 1; cursor: pointer; }
+.wiz-dot-num { width: 26px; height: 26px; border-radius: 50%; background: var(--border); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; transition: background 0.2s; }
+.wiz-dot.active .wiz-dot-num { background: var(--gold); }
+.wiz-dot.done .wiz-dot-num { background: var(--green); }
+.wiz-dot-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+.wiz-dot.active .wiz-dot-label { color: var(--navy); }
+.wiz-line { width: 26px; height: 2px; background: var(--border); margin-top: 12px; flex-shrink: 0; }
+.wizard-screen { display: none; }
+.wizard-screen.active { display: block; animation: fadeUp 0.3s ease both; }
+.wiz-back-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 6px 2px; margin-bottom: 12px; text-decoration: underline; text-underline-offset: 2px; }
+.wiz-back-btn:hover { color: var(--gold); }
+.btn-wiz-continue { width: 100%; padding: 14px; background: var(--gold); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 6px; transition: background 0.15s; }
+.btn-wiz-continue:hover { background: #b8832e; }
+
+/* ===== BOTONES DE ESTADO PARA CLIENTE (retiro en el local) ===== */
+.client-status-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.btn-client-status { width: 100%; padding: 13px; border: none; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; color: #fff; transition: filter 0.15s; }
+.btn-client-status:hover { filter: brightness(1.08); }
+.btn-client-status.salir { background: var(--orange); }
+.btn-client-status.llegue { background: var(--green); }
+
 
 /* ===== LOCALIDADES DE ENVÍO ===== */
 .localidades-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -1309,125 +1334,37 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   </div>
   <div class="container">
 
-    <div id="my-order-status">
-      <h3>🛒 Tu pedido</h3>
-      <div class="status-steps">
-        <div class="status-step"><div class="step-circle" id="step-0">📋</div><div class="step-label" id="label-0">Recibido</div></div>
-        <div class="status-step"><div class="step-circle" id="step-1">✅</div><div class="step-label" id="label-1">Aceptado</div></div>
-        <div class="status-step"><div class="step-circle" id="step-2">🏍️</div><div class="step-label" id="label-2">En camino</div></div>
-        <div class="status-step"><div class="step-circle" id="step-3">🏠</div><div class="step-label" id="label-3">Llegó</div></div>
-      </div>
-      <div id="my-order-detail"></div>
-      <div id="devolucion-pendiente-banner" style="display:none;margin-top:12px;font-size:12px;color:#92400e;background:#fff3cd;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;text-align:center;line-height:1.5"></div>
-      <div style="text-align:center;margin-top:10px">
-        <a style="font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer" onclick="requestNotificationPermission()">🔔 Activar avisos en este dispositivo</a>
-      </div>
-    </div>
-
-    
     <div id="closed-banner" class="closed-banner" style="display:none">
       <h3>🔒 Estamos cerrados</h3>
       <p id="closed-banner-text">Volvemos pronto. ¡Gracias por tu paciencia!</p>
       <button onclick="activarModoEncargo()" style="margin-top:12px;padding:10px 20px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📝 Dejar un encargo</button>
     </div>
 
-    <div id="arrived-banner" class="arrived-banner">
-      <h3>🎉 ¡Llegaron tus chipas!</h3>
-      <p>Tu pedido fue entregado. ¡Disfrutá!</p>
+    <div class="wizard-progress" id="wizard-progress">
+      <div class="wiz-dot active" id="wiz-dot-1" onclick="wizardDotClick(1)"><span class="wiz-dot-num">1</span><span class="wiz-dot-label">Pedido</span></div>
+      <div class="wiz-line"></div>
+      <div class="wiz-dot" id="wiz-dot-2" onclick="wizardDotClick(2)"><span class="wiz-dot-num">2</span><span class="wiz-dot-label">Datos</span></div>
+      <div class="wiz-line"></div>
+      <div class="wiz-dot" id="wiz-dot-3" onclick="wizardDotClick(3)"><span class="wiz-dot-num">3</span><span class="wiz-dot-label">Pago</span></div>
     </div>
 
+    <!-- ===== PASO 1: PRODUCTOS ===== -->
+    <div id="wiz-step-1" class="wizard-screen active">
+      <div class="section-title">Elegí tu pedido</div>
+      <div class="products-grid" id="products-grid"></div>
 
-
-    <!-- RESEÑA (aparece solo cuando el pedido fue entregado) -->
-    <div class="review-section" id="review-section">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-        <h3 style="margin-bottom:0">⭐ ¿Cómo estuvo tu pedido?</h3>
-        <button onclick="skipReview()" title="Cerrar" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0;flex-shrink:0">✕</button>
-      </div>
-      <p>Tu opinión nos ayuda a mejorar. ¡Gracias por tomarte un minuto!</p>
-      <div class="star-selector" id="star-selector">
-        <span class="star" data-val="1" onclick="selectStar(1)">⭐</span>
-        <span class="star" data-val="2" onclick="selectStar(2)">⭐</span>
-        <span class="star" data-val="3" onclick="selectStar(3)">⭐</span>
-        <span class="star" data-val="4" onclick="selectStar(4)">⭐</span>
-        <span class="star" data-val="5" onclick="selectStar(5)">⭐</span>
-      </div>
-      <textarea class="review-textarea" id="review-comment" placeholder="¿Querés dejar un comentario? (opcional)"></textarea>
-      <button class="btn-send-review" id="btn-send-review" onclick="submitReview()">Enviar reseña ✨</button>
-      <button class="btn-skip-review" onclick="skipReview()">No quiero dejar reseña</button>
-      <div class="review-sent-msg" id="review-sent-msg">💛 ¡Muchas gracias por tu reseña!</div>
-    </div>
-    <div class="section-title">Elegí tu pedido</div>
-    <div class="products-grid" id="products-grid"></div>
-
-    <div class="cart-summary" id="cart-summary">
-      <div id="cart-items"></div>
-      <div class="cart-total"><span>Total</span><span id="cart-total-price">$0</span></div>
-    </div>
-
-    <div class="success-msg" id="success-msg">
-      <h3>✅ ¡Pedido enviado!</h3>
-      <p>Te avisamos cuando esté listo 💛</p>
-      <div class="tracking-link-box" id="tracking-link-box" style="display:none">
-        <span id="tracking-link-text"></span>
-        <button onclick="copyTrackingLink()">📋 Copiar</button>
+      <div class="cart-summary" id="cart-summary">
+        <div id="cart-items"></div>
+        <div class="cart-total"><span>Total</span><span id="cart-total-price">$0</span></div>
+        <button class="btn-wiz-continue" id="btn-wiz-continue-1" onclick="wizardGoDatos()">Continuar →</button>
       </div>
     </div>
 
-<div class="payment-card" id="payment-card">
-      <h3>💳 Pagá tu pedido</h3>
-      <div class="pay-amount" id="payment-amount"></div>
+    <!-- ===== PASO 2: DATOS DE ENTREGA ===== -->
+    <div id="wiz-step-2" class="wizard-screen">
+      <button class="wiz-back-btn" onclick="goToWizardStep(1)">← Volver a mi pedido</button>
 
-      <!-- Selector de método de pago -->
-      <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:8px">¿CÓMO VAS A PAGAR?</label>
-      <div class="payment-method-options">
-        <div class="payment-method-opt selected" id="pm-transferencia" onclick="selectPaymentMethod('transferencia')">
-          <div class="pm-icon">💸</div>
-          <div class="pm-label">Transferencia</div>
-        </div>
-        <div class="payment-method-opt" id="pm-efectivo" onclick="selectPaymentMethod('efectivo')">
-          <div class="pm-icon">💵</div>
-          <div class="pm-label">Efectivo</div>
-        </div>
-        <!-- FUTURO: <div class="payment-method-opt" id="pm-mp" onclick="selectPaymentMethod('mp')">
-          <div class="pm-icon">🔵</div>
-          <div class="pm-label">Mercado Pago</div>
-        </div> -->
-      </div>
-
-      <!-- Panel transferencia -->
-      <div id="panel-transferencia">
-        <div class="payment-alias-box">
-          <div class="alias-info">
-            <div class="alias-label">Alias / CBU / CVU</div>
-            <div class="alias-value" id="payment-alias">—</div>
-          </div>
-          <button class="copy-btn" onclick="copyAlias()">📋 Copiar</button>
-        </div>
-        <div class="payment-titular" id="payment-titular"></div>
-        <div class="form-group" id="campo-nombre-transferencia" style="margin:12px 0 4px">
-          <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">NOMBRE DEL TITULAR <span style="color:var(--red)">*</span></label>
-          <input type="text" id="f-nombre-transferencia" placeholder="Ej: María González" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none" />
-          <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px">Ingresá el nombre tal cual aparece en tu Mercado Pago, Modo, Ualá u otra billetera virtual.</div>
-          <div id="e-nombre-transferencia" class="field-error">Ingresá el nombre del titular de la transferencia</div>
-        </div>
-        <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
-        <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
-        <p class="payment-hint">Una vez que transferís, te confirmamos el pedido.</p>
-      </div>
-
-      <!-- Panel efectivo -->
-      <div id="panel-efectivo" style="display:none">
-        <div class="efectivo-msg" style="display:block">
-          <p>💵 Pagás en efectivo al recibir</p>
-          <span>El repartidor te cobra cuando entrega el pedido.</span>
-        </div>
-        <button class="btn-paid" id="btn-confirmar-efectivo" onclick="markAsEfectivo()">✅ Confirmar pedido en efectivo</button>
-        <p class="payment-hint">Te avisamos cuando tu pedido esté en camino.</p>
-      </div>
-    </div>
-
-    <div class="form-card" id="order-form-card">
+      <div class="form-card" id="order-form-card">
       <h2>📦 Tus datos de entrega</h2>
       <div id="edit-mode-extra-banner" style="display:none;font-size:12px;color:#92400e;background:#fff3cd;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.5"></div>
       <div class="form-group">
@@ -1486,13 +1423,121 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
       <button class="btn-submit" id="btn-submit" onclick="submitOrder()">Hacer pedido →</button>
       <button id="btn-cancel-edit" onclick="cancelEditForm()" style="display:none;width:100%;padding:10px;background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit;margin-top:6px;text-decoration:underline;text-underline-offset:2px">Cancelar edición y volver</button>
+      </div>
     </div>
 
-    <div id="post-order-actions" style="display:none">
-      <button id="btn-edit-order" class="edit-btn" onclick="editOrder()">✏️ Modificar mi pedido</button>
-      <button id="btn-cancel-order" class="cancel-btn" onclick="cancelOrder()">✕ Cancelar pedido</button>
-      <div id="edit-extra-hint" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:var(--cream2);border-radius:8px;border:1px solid var(--border);line-height:1.5"></div>
-      <div id="edit-locked-msg" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:#fff3e0;border-radius:8px;border:1px solid #ffe0b2">🏍️ Tu pedido ya salió, no se puede modificar</div>
+    <!-- ===== PASO 3: SEGUIMIENTO Y PAGO ===== -->
+    <div id="wiz-step-3" class="wizard-screen">
+
+      <div id="my-order-status">
+        <h3>🛒 Tu pedido</h3>
+        <div class="status-steps">
+          <div class="status-step"><div class="step-circle" id="step-0">📋</div><div class="step-label" id="label-0">Recibido</div></div>
+          <div class="status-step"><div class="step-circle" id="step-1">✅</div><div class="step-label" id="label-1">Aceptado</div></div>
+          <div class="status-step"><div class="step-circle" id="step-2">🏍️</div><div class="step-label" id="label-2">En camino</div></div>
+          <div class="status-step"><div class="step-circle" id="step-3">🏠</div><div class="step-label" id="label-3">Llegó</div></div>
+        </div>
+        <div id="my-order-detail"></div>
+        <div id="client-status-actions" class="client-status-actions" style="display:none"></div>
+        <div id="devolucion-pendiente-banner" style="display:none;margin-top:12px;font-size:12px;color:#92400e;background:#fff3cd;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;text-align:center;line-height:1.5"></div>
+        <div style="text-align:center;margin-top:10px">
+          <a style="font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer" onclick="requestNotificationPermission()">🔔 Activar avisos en este dispositivo</a>
+        </div>
+      </div>
+
+      <div id="arrived-banner" class="arrived-banner">
+        <h3>🎉 ¡Llegaron tus chipas!</h3>
+        <p>Tu pedido fue entregado. ¡Disfrutá!</p>
+      </div>
+
+      <!-- RESEÑA (aparece solo cuando el pedido fue entregado) -->
+      <div class="review-section" id="review-section">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <h3 style="margin-bottom:0">⭐ ¿Cómo estuvo tu pedido?</h3>
+          <button onclick="skipReview()" title="Cerrar" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0;flex-shrink:0">✕</button>
+        </div>
+        <p>Tu opinión nos ayuda a mejorar. ¡Gracias por tomarte un minuto!</p>
+        <div class="star-selector" id="star-selector">
+          <span class="star" data-val="1" onclick="selectStar(1)">⭐</span>
+          <span class="star" data-val="2" onclick="selectStar(2)">⭐</span>
+          <span class="star" data-val="3" onclick="selectStar(3)">⭐</span>
+          <span class="star" data-val="4" onclick="selectStar(4)">⭐</span>
+          <span class="star" data-val="5" onclick="selectStar(5)">⭐</span>
+        </div>
+        <textarea class="review-textarea" id="review-comment" placeholder="¿Querés dejar un comentario? (opcional)"></textarea>
+        <button class="btn-send-review" id="btn-send-review" onclick="submitReview()">Enviar reseña ✨</button>
+        <button class="btn-skip-review" onclick="skipReview()">No quiero dejar reseña</button>
+        <div class="review-sent-msg" id="review-sent-msg">💛 ¡Muchas gracias por tu reseña!</div>
+      </div>
+
+      <div class="success-msg" id="success-msg">
+        <h3>✅ ¡Pedido enviado!</h3>
+        <p>Te avisamos cuando esté listo 💛</p>
+        <div class="tracking-link-box" id="tracking-link-box" style="display:none">
+          <span id="tracking-link-text"></span>
+          <button onclick="copyTrackingLink()">📋 Copiar</button>
+        </div>
+      </div>
+
+      <div class="payment-card" id="payment-card">
+        <h3>💳 Pagá tu pedido</h3>
+        <div class="pay-amount" id="payment-amount"></div>
+
+        <!-- Selector de método de pago -->
+        <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:8px">¿CÓMO VAS A PAGAR?</label>
+        <div class="payment-method-options">
+          <div class="payment-method-opt selected" id="pm-transferencia" onclick="selectPaymentMethod('transferencia')">
+            <div class="pm-icon">💸</div>
+            <div class="pm-label">Transferencia</div>
+          </div>
+          <div class="payment-method-opt" id="pm-efectivo" onclick="selectPaymentMethod('efectivo')">
+            <div class="pm-icon">💵</div>
+            <div class="pm-label">Efectivo</div>
+          </div>
+          <!-- FUTURO: <div class="payment-method-opt" id="pm-mp" onclick="selectPaymentMethod('mp')">
+            <div class="pm-icon">🔵</div>
+            <div class="pm-label">Mercado Pago</div>
+          </div> -->
+        </div>
+
+        <!-- Panel transferencia -->
+        <div id="panel-transferencia">
+          <div class="payment-alias-box">
+            <div class="alias-info">
+              <div class="alias-label">Alias / CBU / CVU</div>
+              <div class="alias-value" id="payment-alias">—</div>
+            </div>
+            <button class="copy-btn" onclick="copyAlias()">📋 Copiar</button>
+          </div>
+          <div class="payment-titular" id="payment-titular"></div>
+          <div class="form-group" id="campo-nombre-transferencia" style="margin:12px 0 4px">
+            <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px">NOMBRE DEL TITULAR <span style="color:var(--red)">*</span></label>
+            <input type="text" id="f-nombre-transferencia" placeholder="Ej: María González" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--cream);color:var(--text);outline:none" />
+            <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px">Ingresá el nombre tal cual aparece en tu Mercado Pago, Modo, Ualá u otra billetera virtual.</div>
+            <div id="e-nombre-transferencia" class="field-error">Ingresá el nombre del titular de la transferencia</div>
+          </div>
+          <button class="btn-mp" id="btn-mp" onclick="openMercadoPago()" style="display:none">🔵 Pagar con Mercado Pago</button>
+          <button class="btn-paid" id="btn-ya-pague" onclick="markAsPaid()">✅ Ya transferí, avisar</button>
+          <p class="payment-hint">Una vez que transferís, te confirmamos el pedido.</p>
+        </div>
+
+        <!-- Panel efectivo -->
+        <div id="panel-efectivo" style="display:none">
+          <div class="efectivo-msg" style="display:block">
+            <p>💵 Pagás en efectivo al recibir</p>
+            <span>El repartidor te cobra cuando entrega el pedido.</span>
+          </div>
+          <button class="btn-paid" id="btn-confirmar-efectivo" onclick="markAsEfectivo()">✅ Confirmar pedido en efectivo</button>
+          <p class="payment-hint">Te avisamos cuando tu pedido esté en camino.</p>
+        </div>
+      </div>
+
+      <div id="post-order-actions" style="display:none">
+        <button id="btn-edit-order" class="edit-btn" onclick="editOrder()">✏️ Modificar mi pedido</button>
+        <button id="btn-cancel-order" class="cancel-btn" onclick="cancelOrder()">✕ Cancelar pedido</button>
+        <div id="edit-extra-hint" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:var(--cream2);border-radius:8px;border:1px solid var(--border);line-height:1.5"></div>
+        <div id="edit-locked-msg" style="display:none;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;padding:8px 12px;background:#fff3e0;border-radius:8px;border:1px solid #ffe0b2">🏍️ Tu pedido ya salió, no se puede modificar</div>
+      </div>
     </div>
   </div>
 </div>
@@ -2364,6 +2409,33 @@ const DEFAULT_SETTINGS = {
 let settings = { ...DEFAULT_SETTINGS };
 let deliveryMethod = null; // 'retiro' | 'domicilio'
 
+// ==================== WIZARD DE COMPRA (pasos) ====================
+let wizardCurrentStep = 1;
+function goToWizardStep(n) {
+  wizardCurrentStep = n;
+  for (let i = 1; i <= 3; i++) {
+    const screen = document.getElementById('wiz-step-' + i);
+    const dot = document.getElementById('wiz-dot-' + i);
+    if (screen) screen.classList.toggle('active', i === n);
+    if (dot) {
+      dot.classList.toggle('active', i === n);
+      dot.classList.toggle('done', i < n);
+    }
+  }
+  const progress = document.getElementById('wizard-progress');
+  if (progress) progress.style.display = 'flex';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function wizardDotClick(n) {
+  // Solo se puede volver a un paso ya completado (no saltar hacia adelante)
+  if (n < wizardCurrentStep) goToWizardStep(n);
+}
+function wizardGoDatos() {
+  const hasItems = prices.some(p => (quantities[p.id] || 0) > 0);
+  if (!hasItems) { showToast('Seleccioná al menos un producto'); return; }
+  goToWizardStep(2);
+}
+
 // ===== BRANDING =====
 function loadLocalSettings() {
   try {
@@ -2802,6 +2874,7 @@ function initCliente() {
         document.getElementById('payment-card').classList.remove('visible');
         document.getElementById('order-form-card').style.display = 'block';
         showToast('❌ Tu pedido fue cancelado');
+        goToWizardStep(1);
       }
     })
     .subscribe();
@@ -3161,6 +3234,24 @@ async function checkMyOrder() {
   if (data) updateStatusTracker(data);
 }
 
+// En pedidos "Ir a buscar" no hay repartidor: es el propio cliente quien marca su avance
+async function clientMarkEnCamino() {
+  if (!myOrderId) return;
+  const { error } = await db.from('chipas_orders').update({ status: 'en_camino', updated_at: new Date().toISOString() }).eq('id', myOrderId);
+  if (error) { showToast('❌ No se pudo actualizar'); return; }
+  showToast('🚶 ¡Que tengas buen viaje! Avisanos cuando llegues');
+  checkMyOrder();
+}
+
+async function clientMarkLlegue() {
+  if (!myOrderId) return;
+  if (!confirm('¿Confirmás que ya retiraste tu pedido?')) return;
+  const { error } = await db.from('chipas_orders').update({ status: 'entregado', updated_at: new Date().toISOString() }).eq('id', myOrderId);
+  if (error) { showToast('❌ No se pudo actualizar'); return; }
+  showToast('🎉 ¡Gracias por tu compra!');
+  checkMyOrder();
+}
+
 function notifyStatusChangeIfNeeded(order) {
   const key = 'chipas_last_status_' + order.id;
   const prev = sessionStorage.getItem(key);
@@ -3210,18 +3301,21 @@ function updateStatusTracker(order) {
     document.getElementById('address-fields').style.display = 'none';
     myOrderId = null; sessionStorage.removeItem('chipas_order_id'); localStorage.removeItem('chipas_order_id');
     showToast('❌ Tu pedido fue cancelado');
+    goToWizardStep(1);
     return;
   }
 
+  goToWizardStep(3);
   statusEl.style.display = 'block';
   // Mostrar link de seguimiento siempre que haya un pedido activo
   if (order.status !== 'entregado') {
     document.getElementById('success-msg').classList.add('visible');
     showTrackingLink(order.id);
   }
+  const isRetiro = (order.entrega || 'domicilio') === 'retiro';
   const currentStep = STATUS_MAP[order.status] || 0;
-  const emojis = ['📋','✅','🏍️','🏠'];
-  const labels = ['Recibido','Aceptado','En camino','Llegó'];
+  const emojis = isRetiro ? ['📋','✅','🚶','🎉'] : ['📋','✅','🏍️','🏠'];
+  const labels = isRetiro ? ['Recibido','Aceptado','Saliendo','Retiraste'] : ['Recibido','Aceptado','En camino','Llegó'];
 
   for (let i = 0; i < 4; i++) {
     const circle = document.getElementById('step-'+i);
@@ -3233,7 +3327,22 @@ function updateStatusTracker(order) {
   }
 
   document.getElementById('my-order-detail').innerHTML =
-    `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>${order.repartidor_nombre ? ` · <span style="color:var(--gold-light)">🏍️ Lo lleva ${order.repartidor_nombre}</span>` : ''}`;
+    `Pedido <span>${order.id}</span> · ${(order.entrega || 'domicilio') === 'domicilio' ? '🏍️ A domicilio' : '🏃 Ir a buscar'} · Total: <span>${formatPrice(order.total)}</span>${(!isRetiro && order.repartidor_nombre) ? ` · <span style="color:var(--gold-light)">🏍️ Lo lleva ${order.repartidor_nombre}</span>` : ''}`;
+
+  // Como es "ir a buscar", es el cliente (no un repartidor) quien marca su propio avance
+  const clientActions = document.getElementById('client-status-actions');
+  if (clientActions) {
+    if (isRetiro && order.status === 'aceptado') {
+      clientActions.style.display = 'flex';
+      clientActions.innerHTML = `<button class="btn-client-status salir" onclick="clientMarkEnCamino()">🚶 Ya salgo para el local</button>`;
+    } else if (isRetiro && order.status === 'en_camino') {
+      clientActions.style.display = 'flex';
+      clientActions.innerHTML = `<button class="btn-client-status llegue" onclick="clientMarkLlegue()">✅ Ya retiré mi pedido</button>`;
+    } else {
+      clientActions.style.display = 'none';
+      clientActions.innerHTML = '';
+    }
+  }
 
   const devBanner = document.getElementById('devolucion-pendiente-banner');
   if (devBanner) {
@@ -3396,7 +3505,7 @@ async function editOrder() {
       formBanner.style.display = 'none';
     }
   }
-  document.getElementById('order-form-card').scrollIntoView({ behavior: 'smooth' });
+  goToWizardStep(2);
 }
 
 function cancelEditForm() {
@@ -3412,6 +3521,7 @@ function cancelEditForm() {
   if (productsGrid) { productsGrid.style.pointerEvents = ''; productsGrid.style.opacity = ''; }
   document.getElementById('success-msg').classList.add('visible');
   document.getElementById('post-order-actions').style.display = 'block';
+  goToWizardStep(3);
   checkMyOrder();
 }
 
@@ -3434,6 +3544,7 @@ async function cancelOrder() {
   if (btnCancelEditX) btnCancelEditX.style.display = 'none';
   const formBannerX = document.getElementById('edit-mode-extra-banner');
   if (formBannerX) formBannerX.style.display = 'none';
+  goToWizardStep(1);
   renderProducts();
   showToast('❌ Pedido cancelado');
 }
@@ -3583,6 +3694,12 @@ function renderAdminOrders() {
     if (order.status === 'pendiente') {
       actions = `<button class="action-btn btn-accept" onclick="adminUpdateStatus('${order.id}','aceptado')">✅ Aceptar</button>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Rechazar</button>`;
+    } else if (order.status === 'aceptado' && (order.entrega || 'domicilio') === 'retiro') {
+      // Pedido "Ir a buscar": es el cliente quien avisa cuando sale y cuando retira, no un repartidor
+      actions = `<div style="font-size:11.5px;color:var(--muted);padding:6px 2px;flex-basis:100%">🏃 Esperando que el cliente salga a retirarlo</div>
+                 <button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🚶 Marcar en camino</button>
+                 <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>
+                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else if (order.status === 'aceptado') {
       // Si hay más de 1 repartidor activo, mostrar selector; si no, enviar directo
       const repCount = allActiveRepartidores.length;
@@ -3594,6 +3711,10 @@ function renderAdminOrders() {
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>
                  <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>
                  ${assignedBadge}`;
+    } else if (order.status === 'en_camino' && (order.entrega || 'domicilio') === 'retiro') {
+      actions = `<div style="font-size:11.5px;color:var(--muted);padding:6px 2px;flex-basis:100%">🚶 El cliente está en camino a retirarlo</div>
+                 <button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">📦 Marcar retirado</button>
+                 <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else if (order.status === 'en_camino') {
       actions = `<button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">🏠 Marcar entregado</button>
                  <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
@@ -3946,6 +4067,7 @@ function activarModoEncargo() {
   if (banner) banner.style.display = 'none';
   // Show cart too
   updateCartSummary();
+  goToWizardStep(2);
   showToast('📝 Podés dejar tu encargo, te avisamos cuando lo aceptemos');
 }
 
