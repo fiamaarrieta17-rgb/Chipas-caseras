@@ -715,6 +715,11 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .prices-grid { display: flex; flex-direction: column; gap: 12px; max-width: 500px; }
 .price-edit-card { background: #fff; border-radius: 14px; border: 1.5px solid var(--border); padding: 16px 18px; display: flex; align-items: flex-start; gap: 16px; }
 .price-edit-icon { font-size: 30px; flex-shrink: 0; margin-top: 4px; }
+.price-edit-image-preview { width: 54px; height: 54px; border-radius: 12px; object-fit: cover; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 4px; background: var(--cream2); }
+.price-image-upload-btn { padding: 8px 10px; background: var(--cream2); border: 1.5px solid var(--border); border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; color: var(--text); white-space: nowrap; }
+.price-image-upload-btn:hover { background: var(--border); }
+.product-image-preview { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.tracking-emoji-icon { font-size:22px; text-align:center; line-height:28px; background:none; border:none; }
 .price-edit-info { flex: 1; }
 .price-edit-info label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 .price-edit-info input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 15px; font-weight: 700; font-family: inherit; color: var(--navy); background: var(--cream); outline: none; margin-bottom: 8px; }
@@ -1439,6 +1444,10 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
         </div>
         <div id="my-order-detail"></div>
         <div id="client-status-actions" class="client-status-actions" style="display:none"></div>
+        <div id="tracking-map-wrap" style="display:none;margin-top:14px">
+          <div id="tracking-map" style="width:100%;height:220px;border-radius:14px;overflow:hidden;border:1.5px solid var(--border)"></div>
+          <div id="tracking-map-eta" style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px"></div>
+        </div>
         <div id="devolucion-pendiente-banner" style="display:none;margin-top:12px;font-size:12px;color:#92400e;background:#fff3cd;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;text-align:center;line-height:1.5"></div>
         <div style="text-align:center;margin-top:10px">
           <a style="font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer" onclick="requestNotificationPermission()">🔔 Activar avisos en este dispositivo</a>
@@ -2902,7 +2911,7 @@ function renderProducts() {
     card.className = 'product-card' + (p.promo ? ' promo' : '') + (qty > 0 ? ' selected' : '');
     card.innerHTML = `
       ${p.promo ? '<div class="promo-badge">PROMO</div>' : ''}
-      <div class="product-icon">${p.emoji || '🧀'}</div>
+      ${p.image_url ? `<img src="${p.image_url}" class="product-image-preview" alt="" />` : `<div class="product-icon">${p.emoji || '🧀'}</div>`}
       <div class="product-info">
         <div class="product-name">${p.name}</div>
         <div class="product-desc">${p.description || ''}</div>
@@ -3281,10 +3290,154 @@ function notifyDevolucionIfNeeded(order) {
 }
 
 const STATUS_MAP = { pendiente: 0, aceptado: 1, modificado_pago_pendiente: 1, en_camino: 2, entregado: 3 };
+// ===== MAPA DE SEGUIMIENTO EN VIVO (cliente) =====
+// SQL (correr una vez en Supabase):
+// CREATE TABLE IF NOT EXISTS chipas_ubicaciones_repartidor (
+//   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+//   repartidor_id uuid NOT NULL,
+//   lat double precision NOT NULL, lng double precision NOT NULL,
+//   updated_at timestamptz NOT NULL DEFAULT now(),
+//   UNIQUE (repartidor_id)
+// );
+// ALTER TABLE chipas_ubicaciones_repartidor ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "allow_all_ubicaciones_repartidor" ON chipas_ubicaciones_repartidor FOR ALL USING (true) WITH CHECK (true);
+// ALTER PUBLICATION supabase_realtime ADD TABLE chipas_ubicaciones_repartidor;
+// ALTER TABLE chipas_orders ADD COLUMN IF NOT EXISTS lat double precision, ADD COLUMN IF NOT EXISTS lng double precision;
+
+let trackingMap = null;
+let trackingRepMarker = null;
+let trackingClientMarker = null;
+let trackingChannel = null;
+let trackingRepartidorId = null;
+let leafletLoadPromise = null;
+
+// Carga Leaflet (CSS+JS) recién cuando hace falta el mapa
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (leafletLoadPromise) return leafletLoadPromise;
+  leafletLoadPromise = new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return leafletLoadPromise;
+}
+
+// Geocodifica una dirección con Nominatim (OpenStreetMap, gratis, sin API key)
+async function geocodeAddress(text) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(text + ', Argentina')}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch (e) { console.warn('Error geocodificando:', e); }
+  return null;
+}
+
+async function ensureOrderCoords(order) {
+  if (order.lat && order.lng) return { lat: order.lat, lng: order.lng };
+  const addr = `${order.calle} ${order.altura}, ${order.localidad || ''}`;
+  const coords = await geocodeAddress(addr);
+  if (coords) {
+    await db.from('chipas_orders').update({ lat: coords.lat, lng: coords.lng }).eq('id', order.id);
+  }
+  return coords;
+}
+
+async function startTrackingMap(order) {
+  const wrap = document.getElementById('tracking-map-wrap');
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  await loadLeaflet();
+
+  if (!trackingMap) {
+    trackingMap = L.map('tracking-map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19
+    }).addTo(trackingMap);
+  }
+
+  const clientCoords = await ensureOrderCoords(order);
+  if (clientCoords) {
+    if (trackingClientMarker) trackingClientMarker.remove();
+    trackingClientMarker = L.marker([clientCoords.lat, clientCoords.lng], {
+      icon: L.divIcon({ html: '🏠', className: 'tracking-emoji-icon', iconSize: [28, 28] })
+    }).addTo(trackingMap).bindPopup('Tu dirección');
+    trackingMap.setView([clientCoords.lat, clientCoords.lng], 14);
+  }
+
+  // Evitar resuscribirse si ya estamos siguiendo al mismo repartidor
+  if (trackingRepartidorId === order.repartidor_id) return;
+  trackingRepartidorId = order.repartidor_id;
+  if (trackingChannel) db.removeChannel(trackingChannel);
+
+  // Ubicación inicial (por si ya venía en camino cuando abrimos la página)
+  const { data: initial } = await db.from('chipas_ubicaciones_repartidor')
+    .select('*').eq('repartidor_id', order.repartidor_id).maybeSingle();
+  if (initial) placeRepMarker(initial.lat, initial.lng, clientCoords);
+
+  trackingChannel = db.channel('tracking-rep-' + order.repartidor_id)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'chipas_ubicaciones_repartidor',
+      filter: 'repartidor_id=eq.' + order.repartidor_id
+    }, (payload) => {
+      if (payload.new) placeRepMarker(payload.new.lat, payload.new.lng, clientCoords);
+    })
+    .subscribe();
+}
+
+function placeRepMarker(lat, lng, clientCoords) {
+  if (!trackingMap) return;
+  if (trackingRepMarker) {
+    trackingRepMarker.setLatLng([lat, lng]);
+  } else {
+    trackingRepMarker = L.marker([lat, lng], {
+      icon: L.divIcon({ html: '🏍️', className: 'tracking-emoji-icon', iconSize: [28, 28] })
+    }).addTo(trackingMap).bindPopup('Repartidor');
+  }
+  if (clientCoords) {
+    trackingMap.fitBounds([[lat, lng], [clientCoords.lat, clientCoords.lng]], { padding: [30, 30] });
+    const distKm = haversineKm(lat, lng, clientCoords.lat, clientCoords.lng);
+    document.getElementById('tracking-map-eta').textContent = `📍 A ${distKm.toFixed(1)} km de tu casa`;
+  } else {
+    trackingMap.setView([lat, lng], 15);
+  }
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function stopTrackingMap() {
+  const wrap = document.getElementById('tracking-map-wrap');
+  if (wrap) wrap.style.display = 'none';
+  if (trackingChannel) { db.removeChannel(trackingChannel); trackingChannel = null; }
+  trackingRepartidorId = null;
+  trackingRepMarker = null;
+}
+
 function updateStatusTracker(order) {
   if (!order) return;
   notifyStatusChangeIfNeeded(order);
   notifyDevolucionIfNeeded(order);
+
+  if (order.status === 'en_camino' && order.repartidor_id && (order.entrega || 'domicilio') === 'domicilio') {
+    startTrackingMap(order);
+  } else {
+    stopTrackingMap();
+  }
   const statusEl = document.getElementById('my-order-status');
   const arrivedBanner = document.getElementById('arrived-banner');
   const paymentCard = document.getElementById('payment-card');
@@ -3882,15 +4035,25 @@ function buildPricesUI() {
   localPrices.forEach((p, idx) => {
     const card = document.createElement('div');
     card.className = 'price-edit-card';
+    const imageBlock = p.image_url
+      ? `<img src="${p.image_url}" class="price-edit-image-preview" alt="" />`
+      : `<div class="price-edit-icon">${p.emoji || '🧀'}</div>`;
     card.innerHTML = `
-      <div class="price-edit-icon">${p.emoji || '🧀'}</div>
+      ${imageBlock}
       <div class="price-edit-info">
         <label>NOMBRE</label>
         <input type="text" id="pname-${idx}" value="${p.name}" placeholder="Ej: ½ Kilo" />
         <label>DESCRIPCIÓN</label>
         <input type="text" class="small" id="pdesc-${idx}" value="${p.description || ''}" placeholder="Ej: Aprox. 15 chipas" />
-        <label>EMOJI</label>
+        <label>EMOJI ${p.image_url ? '(se usa solo si quitás la imagen)' : ''}</label>
         <input type="text" class="small" id="pemoji-${idx}" value="${p.emoji || '🧀'}" placeholder="🧀" maxlength="4" style="max-width:80px" />
+        <label>IMAGEN DE REFERENCIA</label>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">📐 Usá una imagen cuadrada (1:1). Si subís una rectangular, se recorta automáticamente al centro.</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button type="button" class="price-image-upload-btn" onclick="document.getElementById('pimg-file-${idx}').click()">📷 ${p.image_url ? 'Cambiar' : 'Subir'} imagen</button>
+          ${p.image_url ? `<button type="button" class="price-image-upload-btn" onclick="removeProductImage(${idx})">🗑️ Quitar</button>` : ''}
+          <input type="file" id="pimg-file-${idx}" accept="image/*" style="display:none" onchange="productImageFileSelected(${idx}, event)" />
+        </div>
         <label>PRECIO ($)</label>
         <input type="number" id="pprice-${idx}" value="${p.price}" min="0" step="100" />
         <label class="promo-toggle"><input type="checkbox" id="ppromo-${idx}" ${p.promo ? 'checked' : ''} /> Marcar como PROMO</label>
@@ -3901,6 +4064,61 @@ function buildPricesUI() {
     grid.appendChild(card);
   });
 }
+// ===== IMÁGENES DE PRODUCTO: se suben a Supabase Storage y se guarda solo la URL =====
+// 👉 Requiere un bucket público en Supabase llamado 'imagenes-negocio' (Storage → New
+// bucket → marcar "Public"). Si el bucket no existe o falla la subida, se usa el base64
+// como respaldo para no romper el flujo (pero conviene crear el bucket cuanto antes).
+const IMG_BUCKET = 'imagenes-negocio';
+async function uploadImageToStorage(dataUrl, pathHint) {
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+    const path = `${pathHint}-${Date.now()}.${ext}`;
+    const { error } = await db.storage.from(IMG_BUCKET).upload(path, blob, { contentType: blob.type, upsert: true });
+    if (error) throw error;
+    const { data } = db.storage.from(IMG_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  } catch (e) {
+    console.error('No se pudo subir la imagen al storage, se guarda en base64 como respaldo:', e);
+    return dataUrl;
+  }
+}
+function productImageFileSelected(idx, event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('⚠️ Elegí un archivo de imagen (PNG o JPG).'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = async () => {
+      // Recorte centrado a 1:1 (cuadrado)
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2;
+      const sy = (img.height - side) / 2;
+      const outSize = Math.min(500, side);
+      const canvas = document.createElement('canvas');
+      canvas.width = outSize; canvas.height = outSize;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, outSize, outSize);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      showToast('📤 Subiendo imagen...');
+      const finalUrl = await uploadImageToStorage(dataUrl, `producto-${idx}`);
+      syncPricesFromDOM();
+      localPrices[idx].image_url = finalUrl;
+      buildPricesUI();
+      showToast('✅ Imagen agregada, no te olvides de guardar');
+    };
+    img.onerror = () => showToast('⚠️ No se pudo leer esa imagen, probá con otra.');
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeProductImage(idx) {
+  syncPricesFromDOM();
+  localPrices[idx].image_url = '';
+  buildPricesUI();
+}
 
 function syncPricesFromDOM() {
   localPrices = localPrices.map((p, idx) => ({
@@ -3909,7 +4127,8 @@ function syncPricesFromDOM() {
     description: document.getElementById('pdesc-' + idx)?.value ?? p.description,
     emoji: document.getElementById('pemoji-' + idx)?.value ?? p.emoji,
     price: document.getElementById('pprice-' + idx) ? (parseInt(document.getElementById('pprice-' + idx).value, 10) || 0) : p.price,
-    promo: document.getElementById('ppromo-' + idx) ? document.getElementById('ppromo-' + idx).checked : p.promo
+    promo: document.getElementById('ppromo-' + idx) ? document.getElementById('ppromo-' + idx).checked : p.promo,
+    image_url: p.image_url ?? ''
   }));
 }
 
@@ -3921,7 +4140,8 @@ function addNewProduct() {
     description: '',
     price: 0,
     emoji: '🧀',
-    promo: false
+    promo: false,
+    image_url: ''
   });
   buildPricesUI();
   // Scroll to last
@@ -3949,6 +4169,7 @@ async function savePrices() {
     emoji: (document.getElementById('pemoji-'+idx)?.value || '🧀').trim(),
     price: parseInt(document.getElementById('pprice-'+idx)?.value || p.price) || 0,
     promo: document.getElementById('ppromo-'+idx)?.checked || false,
+    image_url: p.image_url || '',
   }));
 
   // Delete removed
@@ -3961,12 +4182,12 @@ async function savePrices() {
     const isNew = String(p.id).startsWith('new-');
     if (isNew) {
       const { data, error } = await db.from('chipas_prices').insert({
-        name: p.name, description: p.description, price: p.price, emoji: p.emoji, promo: p.promo
+        name: p.name, description: p.description, price: p.price, emoji: p.emoji, promo: p.promo, image_url: p.image_url || null
       }).select().single();
       if (data) p.id = data.id;
     } else {
       await db.from('chipas_prices').update({
-        name: p.name, description: p.description, price: p.price, emoji: p.emoji, promo: p.promo
+        name: p.name, description: p.description, price: p.price, emoji: p.emoji, promo: p.promo, image_url: p.image_url || null
       }).eq('id', p.id);
     }
   }
@@ -4974,6 +5195,36 @@ let repChatMessages = [];
 let repChatChannel = null;
 let repChatGlobalChannel = null;
 let repCurrentUser = null; // {id, usuario, nombre} del repartidor logueado
+let repWatchId = null;
+
+// Empieza a mandar la ubicación del repartidor cada vez que se mueve (mientras tenga algún pedido en_camino)
+function repStartSharingLocation() {
+  if (repWatchId !== null) return; // ya está compartiendo
+  if (!navigator.geolocation || !repCurrentUser) return;
+  repWatchId = navigator.geolocation.watchPosition(
+    async (pos) => {
+      await db.from('chipas_ubicaciones_repartidor').upsert({
+        repartidor_id: repCurrentUser.id,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'repartidor_id' });
+    },
+    (err) => console.warn('Geolocalización repartidor:', err.message),
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+  );
+}
+
+function repStopSharingLocation() {
+  if (repWatchId !== null) { navigator.geolocation.clearWatch(repWatchId); repWatchId = null; }
+}
+
+// Comparte ubicación si ya hay algún pedido en_camino (ej: repartidor recarga la página)
+function repSyncSharingLocation() {
+  const tieneEnCamino = repOrders.some(o => o.status === 'en_camino');
+  if (tieneEnCamino) repStartSharingLocation();
+  else repStopSharingLocation();
+}
 
 const REP_USER_STORAGE_KEY = 'chipas_rep_user';
 
@@ -5052,6 +5303,7 @@ async function repDoLogin() {
 function repDoLogout() {
   sessionStorage.removeItem(REP_USER_STORAGE_KEY);
   repCurrentUser = null;
+  repStopSharingLocation();
   if (repSubscription) repSubscription.unsubscribe();
   document.getElementById('view-rep-main').style.display = 'none';
   document.getElementById('rep-login-usuario').value = '';
@@ -5132,6 +5384,7 @@ function repGetSortedOrders() {
 }
 
 function repRender() {
+  repSyncSharingLocation();
   const sorted = repGetSortedOrders();
   const pending = sorted.filter(o => o.status === 'aceptado').length;
   const enCamino = sorted.filter(o => o.status === 'en_camino').length;
@@ -5255,7 +5508,12 @@ function repBuildCard(order, position, showDrag) {
 }
 
 async function repMarkEnCamino(orderId) {
-  const { error } = await db.from('chipas_orders').update({ status: 'en_camino', updated_at: new Date().toISOString() }).eq('id', orderId);
+  const { error } = await db.from('chipas_orders').update({
+    status: 'en_camino',
+    repartidor_id: repCurrentUser.id,
+    repartidor_nombre: repCurrentUser.nombre,
+    updated_at: new Date().toISOString()
+  }).eq('id', orderId);
   if (error) { showToast('Error al actualizar'); return; }
   const sorted = repGetSortedOrders();
   const idx = sorted.findIndex(o => o.id === orderId);
