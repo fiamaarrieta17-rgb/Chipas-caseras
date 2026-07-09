@@ -3848,9 +3848,8 @@ function renderAdminOrders() {
       actions = `<button class="action-btn btn-accept" onclick="adminUpdateStatus('${order.id}','aceptado')">✅ Aceptar</button>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Rechazar</button>`;
     } else if (order.status === 'aceptado' && (order.entrega || 'domicilio') === 'retiro') {
-      // Pedido "Ir a buscar": es el cliente quien avisa cuando sale y cuando retira, no un repartidor
-      actions = `<div style="font-size:11.5px;color:var(--muted);padding:6px 2px;flex-basis:100%">🏃 Esperando que el cliente salga a retirarlo</div>
-                 <button class="action-btn btn-dispatch" onclick="adminUpdateStatus('${order.id}','en_camino')">🚶 Marcar en camino</button>
+      // Pedido "Ir a buscar": es el cliente quien avisa cuando sale y cuando retira, no el admin
+      actions = `<div style="font-size:11.5px;color:var(--muted);padding:6px 2px;flex-basis:100%">🏃 Esperando que el cliente avise que salió a retirarlo</div>
                  <button class="action-btn btn-cancel-order" onclick="adminUpdateStatus('${order.id}','cancelado')">✕ Cancelar</button>
                  <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else if (order.status === 'aceptado') {
@@ -3866,7 +3865,6 @@ function renderAdminOrders() {
                  ${assignedBadge}`;
     } else if (order.status === 'en_camino' && (order.entrega || 'domicilio') === 'retiro') {
       actions = `<div style="font-size:11.5px;color:var(--muted);padding:6px 2px;flex-basis:100%">🚶 El cliente está en camino a retirarlo</div>
-                 <button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">📦 Marcar retirado</button>
                  <button class="btn-chat-order" onclick="toggleAdminChat('${order.id}')">${chatLabel}</button>`;
     } else if (order.status === 'en_camino') {
       actions = `<button class="action-btn btn-deliver" onclick="adminUpdateStatus('${order.id}','entregado')">🏠 Marcar entregado</button>
